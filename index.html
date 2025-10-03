@@ -1,94 +1,95 @@
 <!doctype html>
-
-<html lang="en">
+<html lang="pt-br">
 <head>
   <meta charset="utf-8" />
   <title>RANDOalidade BANDOmentada</title>
   <meta name="description" content="AR.js Business Card" />
   <meta name="author" content="jpg design ltda" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-  <!-- A-Frame (estável) -->
+  <!-- A-Frame (compatível com AR.js) -->
   <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
 
-  <!-- AR.js para A-Frame via jsDelivr (RawGit quebrou) -->
+  <!-- AR.js para A-Frame (NÃO use RawGit) -->
   <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@3.3.2/aframe/build/aframe-ar.js"></script>
 
   <script>
+    // helper opcional: abre link em novo tab quando clicar num objeto com o componente
     AFRAME.registerComponent('navigate-on-click', {
       schema: { url: { default: '' } },
-      init: function () {
-        const data = this.data, el = this.el;
-        el.addEventListener('click', () => window.open(data.url, '_blank'));
+      init() {
+        this.el.addEventListener('click', () => {
+          const url = this.data.url;
+          if (url) window.open(url, '_blank');
+        });
       }
     });
+
+    // logs úteis para depurar no GitHub Pages
+    window.addEventListener('arjs-video-loaded', () => {
+      console.log('[AR.js] vídeo da câmera carregado');
+    });
+    window.addEventListener('arjs-nft-loaded', () => {
+      console.log('[AR.js] recurso NFT carregado');
+    });
+    document.addEventListener('DOMContentLoaded', () => {
+      console.log('[AFRAME] DOM carregado; versão:', AFRAME.version);
+    });
   </script>
+
+  <style>
+    html, body { margin: 0; height: 100%; background: #000; }
+    .hint {
+      position: fixed; z-index: 2; left: 12px; bottom: 12px;
+      color: #fff; font: 14px/1.2 system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      opacity: .85; background: rgba(0,0,0,.35); padding: 8px 10px; border-radius: 8px;
+    }
+  </style>
 </head>
+<body>
+  <div class="hint">Se a câmera não abrir, clique no cadeado do navegador e permita o acesso.</div>
 
-	
-<body style='margin : 0px; overflow: hidden;'>
-	<a-scene embedded arjs='trackingMethod: best;'>
-		
-		<a-assets>
-			<img id="overlay" src="img/assets/Entrega1_BG_OLHO.png">
-			<img id="fundo" src="img/assets/Entrega1_OVERLAY.png">
-			<img id="overlay2" src="img/assets/Entrega1_BG_OLHO.png">git status
-			<img id="fundo2" src="img/assets/Entrega1_OVERLAY.png">
-		  <!-- Fonte MSDF (JSON que referencia o PNG) -->
-			<a-asset-item id="syneFont" src="fonts/syne.json"></a-asset-item>
-		</a-assets>
-		
-		<a-entity position="0 0 0" rotation="-90 0 0">
-		<!-- fundo preto (um tiquinho atrás) -->
-		<a-plane width="1.6" height="0.6" color="black" opacity="0.8"
-				position="-1.2 0 -0.1"></a-plane>
+  <a-scene
+    embedded
+    renderer="colorManagement: true; physicallyCorrectLights: true; antialias: true"
+    vr-mode-ui="enabled: false"
+    arjs="trackingMethod: best; sourceType: webcam; debugUIEnabled: false;"
+  >
+    <!-- ===== ASSETS ===== -->
+    <a-assets timeout="20000">
+      <!-- sua fonte para text-geometry (ThreeFont JSON) -->
+      <a-asset-item id="syneFont" src="fonts/syne.json"></a-asset-item>
 
-		<!-- texto em cima (um tiquinho à frente) -->
-		<a-text value="SALVE TROPINHA!\nMELHOR VCS TOMAREM CUIDADO\nPQ O BANDO TÁ CHEGANDO\nPRA BAGUNÇAR TUDO"
-				color="white"
-				text-align="left"
-				width="1.5"
-				position="-1.8 0 0.1">
-		</a-text>
-		</a-entity>
+      <!-- suas imagens; ajuste os caminhos se necessário -->
+      <img id="bgOlho" src="img/assets/Entrega1_BG_OLHO.png">
+      <img id="overlay" src="img/assets/Entrega1_OVERLAY.png">
+    </a-assets>
 
-		
-		<a-plane position="-0.6 0 0.5" color="transparent" opacity="0" width="2" height="0.3" rotation="-90 0 0">
-			<a-box src="#overlay" position="-1.2 0 0" depth="0.15" height="0.15" width="0.15" navigate-on-click="url: https://vimeo.com/778620594">
-				<a-animation attribute="rotation" dur="7000" to="0 360 0" easing="linear" repeat="indefinite"></a-animation>
-			</a-box>
-			<a-box src="#fundo" position="-0.8 0 0" depth="0.15" height="0.15" width="0.15" navigate-on-click="url: https://www.instagram.com/randobando.tv">
-				<a-animation attribute="rotation" dur="7000" to="0 360 0" easing="linear" repeat="indefinite"></a-animation>
-			</a-box>
-			<a-box src="#overlay2" position="-0.4 0 0" depth="0.15" height="0.15" width="0.15" navigate-on-click="url: https://dribbble.com/randobando/">
-				<a-animation attribute="rotation" dur="7000" to="0 360 0" easing="linear" repeat="indefinite"></a-animation>
-			</a-box>
-			<a-box src="#fundo2" position="0 0 0" depth="0.15" height="0.15" width="0.15" navigate-on-click="url: https://www.behance.net/randobando">
-				<a-animation attribute="rotation" dur="7000" to="0 360 0" easing="linear" repeat="indefinite"></a-animation>
-			</a-box>
-		</a-plane>
-		
+    <!-- luz básica -->
+    <a-entity light="type: ambient; intensity: 0.6"></a-entity>
+    <a-entity light="type: directional; intensity: 0.8" position="1 2 0"></a-entity>
 
+    <!-- ===== MARKER CONTENT =====
+         Use o marcador HIRO impresso/na tela para testar:
+         https://raw.githubusercontent.com/AR-js-org/AR.js/master/three.js/examples/marker-training/examples/markers/hiro.png
+    -->
+    <a-marker preset="hiro">
+      <!-- plano com sua arte de fundo -->
+      <a-plane src="#bgOlho" width="1.5" height="1.5" position="0 0 0" rotation="-90 0 0"></a-plane>
 
-		
-		<a-plane position="0 0 0" width="1" height="1" rotation="-90 0 -0.01" opacity="0">
-			<a-image src="img/assets/Entrega1_BG_OLHO.png"></a-image>
-		</a-plane>
+      <!-- overlay por cima, levemente elevado no eixo Z -->
+      <a-plane src="#overlay" width="1.5" height="1.5" position="0 0 0.02" rotation="-90 0 0"
+               material="transparent: true"></a-plane>
 
-		<!-- OVERLAY girando -->
-		<a-plane position="0 0.8 0" width="1" height="1" rotation="-90 0 0" opacity="0">
-		<a-image src="img/assets/Entrega1_OVERLAY.png" position="0 0 0">
-			<!-- gira no eixo Z (como pediu) -->
-			<a-animation attribute="rotation"
-						dur="7000"
-						to="0 0 360"
-						easing="linear"
-						repeat="indefinite"></a-animation>
-		</a-image>
-		</a-plane>
+      <!-- exemplo de “botão”: clica e abre link -->
+      <a-box position="0 0.25 0.05" depth="0.03" height="0.12" width="0.6" color="#00D1B2"
+             navigate-on-click="url: https://rando.bando/"
+             event-set__enter="_event: mouseenter; scale: 1.05 1.05 1.05"
+             event-set__leave="_event: mouseleave; scale: 1 1 1"></a-box>
+    </a-marker>
 
-		
-		<a-entity id="camera" cursor="rayOrigin: mouse"></a-entity>
-		<a-marker-camera preset='hiro'></a-marker-camera>
-	</a-scene>
+    <!-- câmera para AR -->
+    <a-entity camera cursor="rayOrigin: mouse"></a-entity>
+  </a-scene>
 </body>
 </html>
