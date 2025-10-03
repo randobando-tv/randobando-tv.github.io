@@ -2,37 +2,38 @@
 
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
+  <meta charset="utf-8">
+
   <title>RANDOalidade BANDOmentada</title>
-  <meta name="description" content="AR.js Business Card" />
-  <meta name="author" content="jpg design ltda" />
-
-  <!-- A-Frame (estável) -->
-  <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
-
-  <!-- AR.js para A-Frame via jsDelivr (RawGit quebrou) -->
-  <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@3.3.2/aframe/build/aframe-ar.js"></script>
-
-  <script>
-    AFRAME.registerComponent('navigate-on-click', {
-      schema: { url: { default: '' } },
-      init: function () {
-        const data = this.data, el = this.el;
-        el.addEventListener('click', () => window.open(data.url, '_blank'));
-      }
-    });
-  </script>
+  <meta name="description" content="AR.js Business Card">
+  <meta name="author" content="jpg design ltda fork - credits to Utkarsh Gupta (github)">
+  <script src="https://aframe.io/releases/0.8.0/aframe.min.js"></script>
+	<script src="https://cdn.rawgit.com/jeromeetienne/AR.js/1.6.0/aframe/build/aframe-ar.js"></script>
+	
+	<script>
+	  AFRAME.registerComponent('navigate-on-click', {
+	    schema: {
+	      url: {default: ''}
+	    },
+	    init: function () {
+	      var data = this.data;
+	      var el = this.el;
+	      el.addEventListener('click', function () {
+		window.open(data.url, '_blank');
+	      });
+	    }
+	  });        
+	</script>
 </head>
-
 	
 <body style='margin : 0px; overflow: hidden;'>
 	<a-scene embedded arjs='trackingMethod: best;'>
 		
 		<a-assets>
-			<img id="overlay" src="img/assets/Entrega1_BG_OLHO.png">
-			<img id="fundo" src="img/assets/Entrega1_OVERLAY.png">
-			<img id="overlay2" src="img/assets/Entrega1_BG_OLHO.png">git status
-			<img id="fundo2" src="img/assets/Entrega1_OVERLAY.png">
+			<img id="overlay" src="https://lh3.googleusercontent.com/d/1QXdttGZ-0KpGNQgzminS_kpNM-WyEkTh">
+			<img id="fundo" src="https://lh3.googleusercontent.com/d/1yQfUlam96ySUcfxFwx4S1pvbWTjiGB4Q">
+			<img id="overlay2" src="https://lh3.googleusercontent.com/d/1QXdttGZ-0KpGNQgzminS_kpNM-WyEkTh">
+			<img id="fundo2" src="https://lh3.googleusercontent.com/d/1yQfUlam96ySUcfxFwx4S1pvbWTjiGB4Q">
 		  <!-- Fonte MSDF (JSON que referencia o PNG) -->
 		</a-assets>
 		
