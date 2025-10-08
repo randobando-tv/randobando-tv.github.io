@@ -260,13 +260,56 @@
       init(){
         this.onClick = (e) => {
           e.stopPropagation();
-          const a = document.createElement('a');
-          a.href = this.data.url; a.target = '_blank'; a.rel = 'noopener';
-          document.body.appendChild(a); a.click(); a.remove();
+          e.preventDefault();
+          
+          const url = this.data.url;
+          log(`[click-open-url] Clique detectado! Tentando abrir: ${url}`);
+          
+          // Método 1: Tentar window.open direto (pode ser bloqueado por pop-up blockers)
+          try {
+            const newWindow = window.open(url, '_blank', 'noopener,noreferrer');
+            if (newWindow) {
+              log(`[click-open-url] window.open bem-sucedido para: ${url}`);
+              newWindow.opener = null;
+            } else {
+              log(`[click-open-url] window.open bloqueado, tentando método alternativo...`);
+              // Método 2: Criar elemento <a> e simular clique
+              const a = document.createElement('a');
+              a.href = url;
+              a.target = '_blank';
+              a.rel = 'noopener noreferrer';
+              a.style.display = 'none';
+              document.body.appendChild(a);
+              
+              // Tentar disparar clique real
+              const clickEvent = new MouseEvent('click', {
+                view: window,
+                bubbles: true,
+                cancelable: true
+              });
+              a.dispatchEvent(clickEvent);
+              
+              setTimeout(() => a.remove(), 100);
+              log(`[click-open-url] Método alternativo executado para: ${url}`);
+            }
+          } catch (err) {
+            log(`[click-open-url] Erro ao abrir URL: ${err.message}`);
+            // Fallback: redirecionar a página atual
+            log(`[click-open-url] Fallback: redirecionando página atual para: ${url}`);
+            window.location.href = url;
+          }
         };
+        
+        // Adicionar listeners para múltiplos tipos de eventos
         this.el.addEventListener('click', this.onClick);
+        this.el.addEventListener('touchend', this.onClick);
+        
+        log(`[click-open-url] Componente inicializado para URL: ${this.data.url}`);
       },
-      remove(){ this.el.removeEventListener('click', this.onClick); }
+      remove(){ 
+        this.el.removeEventListener('click', this.onClick);
+        this.el.removeEventListener('touchend', this.onClick);
+      }
     });
 
     AFRAME.registerComponent('hover-color', {
