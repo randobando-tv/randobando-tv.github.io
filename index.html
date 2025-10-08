@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
-  <title>AR — A-Frame 1.7.0 + MindAR (fix: case-sensitive paths)</title>
+  <title>AR — A-Frame 1.7.0 + MindAR (fix: case-sensitive paths + button components)</title>
 
   <!-- A-Frame 1.7.0 -->
   <script src="https://aframe.io/releases/1.7.0/aframe.min.js"></script>
@@ -67,15 +67,24 @@
                visible="false">
       </a-image>
 
+      <!-- CHANGE: declarative button components + URLs -->
       <a-entity id="buttons" visible="false" position="0 0.05 0" rotation="0 0 0">
-        <a-plane class="btn" position="-0.5 0 0" width="0.4" height="0.15" color="#222" opacity="0.9">
-          <a-text value="Site A" align="center" width="1.2" position="0 0 0.01"></a-text>
+        <a-plane class="btn" position="-0.5 0 0" width="0.4" height="0.15" color="#222" opacity="0.9"
+                 hover-color="over:#444; out:#222"
+                 click-open-url="url:https://randobando.tv/">
+          <a-text value="randobando.tv" align="center" width="1.2" position="0 0 0.01"></a-text>
         </a-plane>
-        <a-plane class="btn" position="0 0 0" width="0.4" height="0.15" color="#222" opacity="0.9">
-          <a-text value="Site B" align="center" width="1.2" position="0 0 0.01"></a-text>
+
+        <a-plane class="btn" position="0 0 0" width="0.4" height="0.15" color="#222" opacity="0.9"
+                 hover-color="over:#444; out:#222"
+                 click-open-url="url:https://www.instagram.com/randobando.tv/">
+          <a-text value="instagram" align="center" width="1.2" position="0 0 0.01"></a-text>
         </a-plane>
-        <a-plane class="btn" position="0.5 0 0" width="0.4" height="0.15" color="#222" opacity="0.9">
-          <a-text value="Site C" align="center" width="1.2" position="0 0 0.01"></a-text>
+
+        <a-plane class="btn" position="0.5 0 0" width="0.4" height="0.15" color="#222" opacity="0.9"
+                 hover-color="over:#444; out:#222"
+                 click-open-url="url:https://www.behance.net/randobando">
+          <a-text value="behance" align="center" width="1.2" position="0 0 0.01"></a-text>
         </a-plane>
       </a-entity>
 
@@ -83,7 +92,42 @@
   </a-scene>
 
   <script>
-    // --- Debug helpers ---
+    // --- CHANGE: components for buttons (declarative, iOS-friendly) ---
+    AFRAME.registerComponent('click-open-url', {
+      schema: { url: {type: 'string'} },
+      init(){
+        this.onClick = (e) => {
+          e.stopPropagation();
+          const a = document.createElement('a');
+          a.href = this.data.url;
+          a.target = '_blank';
+          a.rel = 'noopener';
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+        };
+        this.el.addEventListener('click', this.onClick);
+      },
+      remove(){
+        this.el.removeEventListener('click', this.onClick);
+      }
+    });
+
+    AFRAME.registerComponent('hover-color', {
+      schema: { over: {default:'#444'}, out:{default:'#222'} },
+      init(){
+        this.onEnter = () => this.el.setAttribute('color', this.data.over);
+        this.onLeave = () => this.el.setAttribute('color', this.data.out);
+        this.el.addEventListener('mouseenter', this.onEnter);
+        this.el.addEventListener('mouseleave', this.onLeave);
+      },
+      remove(){
+        this.el.removeEventListener('mouseenter', this.onEnter);
+        this.el.removeEventListener('mouseleave', this.onLeave);
+      }
+    });
+
+    // --- Debug helpers (mantidos) ---
     const log = (...args)=>{ console.log(...args); addPanel(args.map(String).join(' ')); }
     const panel = document.getElementById('panel');
     const statusEl = document.getElementById('status');
@@ -95,8 +139,7 @@
     });
     function addPanel(s){ panel.textContent += s + "\\n"; }
 
-    // --- Sequences ---
-    // IMPORTANT: match the exact folder names you used in the repo (case-sensitive)
+    // --- Sequences (inalterado) ---
     const ANIM1 = {
       folder: 'assets/Anim1',
       pattern: i => `anim1_${String(i).padStart(4,'0')}.png`,
@@ -168,7 +211,6 @@
 
       const p1 = await preloadSequence(ANIM1);
       const p2 = await preloadSequence(KEEP);
-      // Warn if nothing loaded
       if (!p1.some(r=>r.ok)){
         log('ATENÇÃO: nenhum frame de ANIM1 foi carregado. Verifique o caminho/case.');
       }
@@ -195,21 +237,8 @@
       });
     });
 
-    // Botões (exemplo)
-    const btns = document.querySelectorAll('.btn');
-    const links = [
-      'https://randobando.tv/',
-      'https://www.instagram.com/randobando.tv/',
-      'https://www.behance.net/randobando'
-    ];
-    btns.forEach((el, idx) => {
-      el.addEventListener('click', (e) => {
-        e.stopPropagation();
-        openURL(links[idx]);
-      });
-      el.addEventListener('mouseenter', () => el.setAttribute('color', '#444'));
-      el.addEventListener('mouseleave', () => el.setAttribute('color', '#222'));
-    });
+    // CHANGE: removido trecho anterior de listeners imperativos .btn
+    // pois agora cada botão tem seus próprios componentes declarativos.
 
     window.addEventListener('error', (e)=>{
       log('window error:', e.message);
