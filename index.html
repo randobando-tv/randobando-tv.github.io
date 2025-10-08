@@ -71,15 +71,18 @@
 
     <a-entity mindar-image-target="targetIndex: 0" id="anchor">
       <!-- a-image é conveniente; vamos trocar material.src por IDs de assets -->
+      <!-- IMPORTANTE: class="clickthrough" remove este elemento da detecção do raycaster -->
       <a-image id="sprite"
                src="#firstFrame"
                position="0 0 0"
                material="transparent: true; alphaTest: 0.01; side: double; opacity: 1"
                width="1.2" height="1.2"
-               visible="false">
+               visible="false"
+               class="clickthrough">
       </a-image>
 
-      <a-entity id="buttons" visible="false" position="0 0.05 0" rotation="0 0 0">
+      <!-- Botões com position Z maior (0.1) para ficarem na frente do sprite (0) -->
+      <a-entity id="buttons" visible="false" position="0 0.05 0.1" rotation="0 0 0">
         <!-- BOTÕES ORIGINAIS -->
         <a-plane class="btn" position="-0.5 0 0" width="0.4" height="0.15" color="#222" opacity="0.9"
                  hover-color="over:#444; out:#222"
@@ -118,11 +121,10 @@
           <a-text value="TEST 3: simple" align="center" width="1.2" position="0 0 0.01" color="#FFF"></a-text>
         </a-plane>
 
-        <!-- BOTÕES DE TESTE - ABORDAGEM 4: Cursor fuse (gaze-based) -->
+        <!-- BOTÕES DE TESTE - ABORDAGEM 4: Listener direto no canvas -->
         <a-plane id="test-btn-4" class="btn test-btn" position="-0.5 -0.45 0" width="0.4" height="0.15" 
-                 color="#FF33F5" opacity="0.9"
-                 fuse-click="url:https://www.instagram.com/randobando.tv/">
-          <a-text value="TEST 4: fuse" align="center" width="1.2" position="0 0 0.01" color="#FFF"></a-text>
+                 color="#FF33F5" opacity="0.9">
+          <a-text value="TEST 4: canvas" align="center" width="1.2" position="0 0 0.01" color="#FFF"></a-text>
         </a-plane>
 
         <!-- BOTÕES DE TESTE - ABORDAGEM 5: Raycaster direto -->
@@ -256,6 +258,24 @@
         keepAlive = true; playing = false;
         playSequence(KEEP);
         buttons.setAttribute('visible', 'true');
+        log('Botões agora visíveis! Verificando raycaster...');
+        
+        // Verificar configuração do raycaster
+        setTimeout(() => {
+          const camera = document.querySelector('a-camera');
+          const raycaster = camera.components.raycaster;
+          if (raycaster) {
+            log(`Raycaster configurado: objects=${raycaster.data.objects}, far=${raycaster.data.far}`);
+            log(`Raycaster intersections: ${raycaster.intersections.length}`);
+          }
+          
+          // Listar todos os botões
+          const allButtons = document.querySelectorAll('.btn');
+          log(`Total de botões com classe .btn: ${allButtons.length}`);
+          allButtons.forEach((btn, i) => {
+            log(`Botão ${i}: id=${btn.id}, visible=${btn.getAttribute('visible')}, position=${btn.getAttribute('position')}`);
+          });
+        }, 500);
       });
     }
 
@@ -406,20 +426,30 @@
       }
     });
 
-    // ABORDAGEM 4: Fuse-based (olhar fixo)
-    AFRAME.registerComponent('fuse-click', {
-      schema: { url: {type: 'string'} },
-      init(){
-        log(`[fuse-click] Inicializado para: ${this.data.url}`);
-        this.el.setAttribute('cursor', 'fuse: true; fuseTimeout: 1500');
-        this.el.addEventListener('fusing', () => {
-          log('[fuse-click] Fusing iniciado...');
-        });
-        this.el.addEventListener('click', (e) => {
-          log('[fuse-click] Click/Fuse completado!');
-          window.open(this.data.url, '_blank');
-        });
-      }
+    // ABORDAGEM 4: Listener direto no canvas (removido fuse-click problemático)
+    document.addEventListener('DOMContentLoaded', () => {
+      setTimeout(() => {
+        const testBtn4 = document.getElementById('test-btn-4');
+        if (testBtn4) {
+          const canvas = document.querySelector('a-scene').canvas;
+          if (canvas) {
+            canvas.addEventListener('click', (e) => {
+              log('[TEST 4] Canvas click detectado!');
+              // Verificar se o raycaster está intersectando o botão 4
+              const camera = document.querySelector('a-camera');
+              const raycaster = camera.components.raycaster;
+              if (raycaster && raycaster.intersections.length > 0) {
+                const intersected = raycaster.intersections[0].object.el;
+                if (intersected && intersected.id === 'test-btn-4') {
+                  log('[TEST 4] Botão 4 detectado pelo raycaster!');
+                  window.open('https://www.instagram.com/randobando.tv/', '_blank');
+                }
+              }
+            });
+            log('[TEST 4] Listener de canvas adicionado');
+          }
+        }
+      }, 2000);
     });
 
     // ABORDAGEM 5: Raycaster direto
@@ -468,6 +498,138 @@
             mesh.userData.clickHandler = openUrl;
           }
         });
+      }
+    });
+
+    // ===== SISTEMA DE DETECÇÃO MANUAL DE CLIQUES =====
+    // Como o raycaster do A-Frame não está funcionando com MindAR, vamos usar Three.js diretamente
+    
+    let manualRaycaster = null;
+    let mouse = new THREE.Vector2();
+    
+    function setupManualClickDetection() {
+      const scene = document.querySelector('a-scene');
+      if (!scene || !scene.hasLoaded) {
+        setTimeout(setupManualClickDetection, 500);
+        return;
+      }
+      
+      const sceneEl = scene;
+      const camera = sceneEl.camera;
+      const canvas = sceneEl.canvas;
+      
+      if (!camera || !canvas) {
+        log('[Manual Click] Câmera ou canvas não encontrados, tentando novamente...');
+        setTimeout(setupManualClickDetection, 500);
+        return;
+      }
+      
+      manualRaycaster = new THREE.Raycaster();
+      log('[Manual Click] Sistema de detecção manual inicializado');
+      
+      // Função para processar clique/toque
+      function handleInteraction(event) {
+        event.preventDefault();
+        
+        // Obter coordenadas normalizadas do clique/toque
+        let clientX, clientY;
+        if (event.touches && event.touches.length > 0) {
+          clientX = event.touches[0].clientX;
+          clientY = event.touches[0].clientY;
+        } else if (event.changedTouches && event.changedTouches.length > 0) {
+          clientX = event.changedTouches[0].clientX;
+          clientY = event.changedTouches[0].clientY;
+        } else {
+          clientX = event.clientX;
+          clientY = event.clientY;
+        }
+        
+        const rect = canvas.getBoundingClientRect();
+        mouse.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+        mouse.y = -((clientY - rect.top) / rect.height) * 2 + 1;
+        
+        log(`[Manual Click] Clique em (${mouse.x.toFixed(2)}, ${mouse.y.toFixed(2)})`);
+        
+        // Configurar raycaster
+        manualRaycaster.setFromCamera(mouse, camera);
+        
+        // Obter todos os objetos 3D dos botões
+        const buttonElements = document.querySelectorAll('.btn');
+        const buttonMeshes = [];
+        
+        buttonElements.forEach(btnEl => {
+          const mesh = btnEl.getObject3D('mesh');
+          if (mesh && btnEl.getAttribute('visible') !== 'false') {
+            mesh.userData.element = btnEl;
+            buttonMeshes.push(mesh);
+          }
+        });
+        
+        log(`[Manual Click] Verificando ${buttonMeshes.length} meshes de botões`);
+        
+        // Verificar intersecções
+        const intersects = manualRaycaster.intersectObjects(buttonMeshes, true);
+        
+        log(`[Manual Click] Intersecções encontradas: ${intersects.length}`);
+        
+        if (intersects.length > 0) {
+          // Encontrar o elemento A-Frame correspondente
+          let targetEl = null;
+          let currentObj = intersects[0].object;
+          
+          while (currentObj && !targetEl) {
+            if (currentObj.el && currentObj.el.classList.contains('btn')) {
+              targetEl = currentObj.el;
+              break;
+            }
+            if (currentObj.userData && currentObj.userData.element) {
+              targetEl = currentObj.userData.element;
+              break;
+            }
+            currentObj = currentObj.parent;
+          }
+          
+          if (targetEl) {
+            log(`[Manual Click] Botão clicado: ${targetEl.id || 'sem ID'}`);
+            
+            // Tentar obter URL do componente
+            let url = null;
+            if (targetEl.components['click-open-url']) {
+              url = targetEl.components['click-open-url'].data.url;
+            } else if (targetEl.components['simple-click']) {
+              url = targetEl.components['simple-click'].data.url;
+            } else if (targetEl.components['raycast-click']) {
+              url = targetEl.components['raycast-click'].data.url;
+            } else if (targetEl.components['custom-event-click']) {
+              url = targetEl.components['custom-event-click'].data.url;
+            }
+            
+            if (url) {
+              log(`[Manual Click] Abrindo URL: ${url}`);
+              window.open(url, '_blank');
+            } else {
+              log(`[Manual Click] Nenhuma URL encontrada para este botão`);
+            }
+          }
+        } else {
+          log(`[Manual Click] Nenhum botão foi clicado`);
+        }
+      }
+      
+      // Adicionar listeners
+      canvas.addEventListener('click', handleInteraction);
+      canvas.addEventListener('touchend', handleInteraction);
+      
+      log('[Manual Click] Listeners adicionados ao canvas');
+    }
+    
+    // Iniciar após a cena carregar
+    document.addEventListener('DOMContentLoaded', () => {
+      const scene = document.querySelector('a-scene');
+      if (scene.hasLoaded) {
+        setupManualClickDetection();
+      } else {
+        scene.addEventListener('loaded', setupManualClickDetection);
       }
     });
 
