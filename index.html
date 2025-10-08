@@ -80,6 +80,7 @@
       </a-image>
 
       <a-entity id="buttons" visible="false" position="0 0.05 0" rotation="0 0 0">
+        <!-- BOTÕES ORIGINAIS -->
         <a-plane class="btn" position="-0.5 0 0" width="0.4" height="0.15" color="#222" opacity="0.9"
                  hover-color="over:#444; out:#222"
                  click-open-url="url:https://randobando.tv/">
@@ -96,6 +97,46 @@
                  hover-color="over:#444; out:#222"
                  click-open-url="url:https://www.behance.net/randobando">
           <a-text value="behance" align="center" width="1.2" position="0 0 0.01"></a-text>
+        </a-plane>
+
+        <!-- BOTÕES DE TESTE - ABORDAGEM 1: Evento mousedown direto via JavaScript -->
+        <a-plane id="test-btn-1" class="btn test-btn" position="-0.5 -0.25 0" width="0.4" height="0.15" 
+                 color="#FF5733" opacity="0.9">
+          <a-text value="TEST 1: mousedown" align="center" width="1.2" position="0 0 0.01" color="#FFF"></a-text>
+        </a-plane>
+
+        <!-- BOTÕES DE TESTE - ABORDAGEM 2: Evento touchstart direto via JavaScript -->
+        <a-plane id="test-btn-2" class="btn test-btn" position="0 -0.25 0" width="0.4" height="0.15" 
+                 color="#33FF57" opacity="0.9">
+          <a-text value="TEST 2: touchstart" align="center" width="1.2" position="0 0 0.01" color="#000"></a-text>
+        </a-plane>
+
+        <!-- BOTÕES DE TESTE - ABORDAGEM 3: Componente customizado simples -->
+        <a-plane id="test-btn-3" class="btn test-btn" position="0.5 -0.25 0" width="0.4" height="0.15" 
+                 color="#3357FF" opacity="0.9"
+                 simple-click="url:https://randobando.tv/">
+          <a-text value="TEST 3: simple" align="center" width="1.2" position="0 0 0.01" color="#FFF"></a-text>
+        </a-plane>
+
+        <!-- BOTÕES DE TESTE - ABORDAGEM 4: Cursor fuse (gaze-based) -->
+        <a-plane id="test-btn-4" class="btn test-btn" position="-0.5 -0.45 0" width="0.4" height="0.15" 
+                 color="#FF33F5" opacity="0.9"
+                 fuse-click="url:https://www.instagram.com/randobando.tv/">
+          <a-text value="TEST 4: fuse" align="center" width="1.2" position="0 0 0.01" color="#FFF"></a-text>
+        </a-plane>
+
+        <!-- BOTÕES DE TESTE - ABORDAGEM 5: Raycaster direto -->
+        <a-plane id="test-btn-5" class="btn test-btn" position="0 -0.45 0" width="0.4" height="0.15" 
+                 color="#F5FF33" opacity="0.9"
+                 raycast-click="url:https://www.behance.net/randobando">
+          <a-text value="TEST 5: raycast" align="center" width="1.2" position="0 0 0.01" color="#000"></a-text>
+        </a-plane>
+
+        <!-- BOTÕES DE TESTE - ABORDAGEM 6: Listener de evento customizado -->
+        <a-plane id="test-btn-6" class="btn test-btn" position="0.5 -0.45 0" width="0.4" height="0.15" 
+                 color="#33FFF5" opacity="0.9"
+                 custom-event-click="url:https://randobando.tv/">
+          <a-text value="TEST 6: custom" align="center" width="1.2" position="0 0 0.01" color="#000"></a-text>
         </a-plane>
       </a-entity>
     </a-entity>
@@ -323,6 +364,110 @@
       remove(){
         this.el.removeEventListener('mouseenter', this.onEnter);
         this.el.removeEventListener('mouseleave', this.onLeave);
+      }
+    });
+
+    // ===== COMPONENTES DE TESTE =====
+    
+    // ABORDAGEM 1 e 2: Listeners diretos via JavaScript (mousedown e touchstart)
+    document.addEventListener('DOMContentLoaded', () => {
+      setTimeout(() => {
+        const testBtn1 = document.getElementById('test-btn-1');
+        const testBtn2 = document.getElementById('test-btn-2');
+        
+        if (testBtn1) {
+          testBtn1.addEventListener('mousedown', (e) => {
+            log('[TEST 1] mousedown detectado!');
+            window.open('https://randobando.tv/', '_blank');
+          });
+          log('[TEST 1] Listener mousedown adicionado');
+        }
+        
+        if (testBtn2) {
+          testBtn2.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            log('[TEST 2] touchstart detectado!');
+            window.open('https://www.instagram.com/randobando.tv/', '_blank');
+          });
+          log('[TEST 2] Listener touchstart adicionado');
+        }
+      }, 2000);
+    });
+
+    // ABORDAGEM 3: Componente simples com apenas window.open
+    AFRAME.registerComponent('simple-click', {
+      schema: { url: {type: 'string'} },
+      init(){
+        log(`[simple-click] Inicializado para: ${this.data.url}`);
+        this.el.addEventListener('click', (e) => {
+          log('[simple-click] Click detectado!');
+          window.open(this.data.url, '_blank');
+        });
+      }
+    });
+
+    // ABORDAGEM 4: Fuse-based (olhar fixo)
+    AFRAME.registerComponent('fuse-click', {
+      schema: { url: {type: 'string'} },
+      init(){
+        log(`[fuse-click] Inicializado para: ${this.data.url}`);
+        this.el.setAttribute('cursor', 'fuse: true; fuseTimeout: 1500');
+        this.el.addEventListener('fusing', () => {
+          log('[fuse-click] Fusing iniciado...');
+        });
+        this.el.addEventListener('click', (e) => {
+          log('[fuse-click] Click/Fuse completado!');
+          window.open(this.data.url, '_blank');
+        });
+      }
+    });
+
+    // ABORDAGEM 5: Raycaster direto
+    AFRAME.registerComponent('raycast-click', {
+      schema: { url: {type: 'string'} },
+      init(){
+        log(`[raycast-click] Inicializado para: ${this.data.url}`);
+        this.el.addEventListener('raycaster-intersected', (e) => {
+          log('[raycast-click] Raycaster intersected!');
+          this.raycaster = e.detail.el;
+        });
+        this.el.addEventListener('raycaster-intersected-cleared', () => {
+          log('[raycast-click] Raycaster cleared');
+          this.raycaster = null;
+        });
+        this.el.addEventListener('click', (e) => {
+          log('[raycast-click] Click detectado!');
+          if (this.raycaster) {
+            log('[raycast-click] Raycaster ativo, abrindo URL');
+            window.open(this.data.url, '_blank');
+          }
+        });
+      }
+    });
+
+    // ABORDAGEM 6: Evento customizado
+    AFRAME.registerComponent('custom-event-click', {
+      schema: { url: {type: 'string'} },
+      init(){
+        log(`[custom-event-click] Inicializado para: ${this.data.url}`);
+        const openUrl = () => {
+          log('[custom-event-click] Evento customizado disparado!');
+          window.open(this.data.url, '_blank');
+        };
+        
+        // Múltiplos listeners
+        this.el.addEventListener('click', openUrl);
+        this.el.addEventListener('touchend', openUrl);
+        this.el.addEventListener('mouseup', openUrl);
+        
+        // Listener no objeto Three.js diretamente
+        this.el.addEventListener('loaded', () => {
+          const mesh = this.el.getObject3D('mesh');
+          if (mesh) {
+            log('[custom-event-click] Mesh encontrado, adicionando listener direto');
+            mesh.userData.clickHandler = openUrl;
+          }
+        });
       }
     });
 
