@@ -84,61 +84,22 @@
       <!-- Botões com position Z maior (0.1) para ficarem na frente do sprite (0) -->
       <a-entity id="buttons" visible="false" position="0 0.05 0.1" rotation="0 0 0">
         <!-- BOTÕES ORIGINAIS -->
-        <a-plane class="btn" position="-0.5 0 0" width="0.4" height="0.15" color="#222" opacity="0.9"
+        <a-plane id="btn-original-1" class="btn" position="0.5 0.2 0.1" width="0.4" height="0.15" color="#222" opacity="0.9"
                  hover-color="over:#444; out:#222"
                  click-open-url="url:https://randobando.tv/">
           <a-text value="randobando.tv" align="center" width="1.2" position="0 0 0.01"></a-text>
         </a-plane>
 
-        <a-plane class="btn" position="0 0 0" width="0.4" height="0.15" color="#222" opacity="0.9"
+        <a-plane id="btn-original-2" class="btn" position="0.5 0 0.1" width="0.4" height="0.15" color="#222" opacity="0.9"
                  hover-color="over:#444; out:#222"
                  click-open-url="url:https://www.instagram.com/randobando.tv/">
           <a-text value="instagram" align="center" width="1.2" position="0 0 0.01"></a-text>
         </a-plane>
 
-        <a-plane class="btn" position="0.5 0 0" width="0.4" height="0.15" color="#222" opacity="0.9"
+        <a-plane id="btn-original-3" class="btn" position="0.5 -0.2 0.1" width="0.4" height="0.15" color="#222" opacity="0.9"
                  hover-color="over:#444; out:#222"
                  click-open-url="url:https://www.behance.net/randobando">
           <a-text value="behance" align="center" width="1.2" position="0 0 0.01"></a-text>
-        </a-plane>
-
-        <!-- BOTÕES DE TESTE - ABORDAGEM 1: Evento mousedown direto via JavaScript -->
-        <a-plane id="test-btn-1" class="btn test-btn" position="-0.5 -0.25 0" width="0.4" height="0.15" 
-                 color="#FF5733" opacity="0.9">
-          <a-text value="TEST 1: mousedown" align="center" width="1.2" position="0 0 0.01" color="#FFF"></a-text>
-        </a-plane>
-
-        <!-- BOTÕES DE TESTE - ABORDAGEM 2: Evento touchstart direto via JavaScript -->
-        <a-plane id="test-btn-2" class="btn test-btn" position="0 -0.25 0" width="0.4" height="0.15" 
-                 color="#33FF57" opacity="0.9">
-          <a-text value="TEST 2: touchstart" align="center" width="1.2" position="0 0 0.01" color="#000"></a-text>
-        </a-plane>
-
-        <!-- BOTÕES DE TESTE - ABORDAGEM 3: Componente customizado simples -->
-        <a-plane id="test-btn-3" class="btn test-btn" position="0.5 -0.25 0" width="0.4" height="0.15" 
-                 color="#3357FF" opacity="0.9"
-                 simple-click="url:https://randobando.tv/">
-          <a-text value="TEST 3: simple" align="center" width="1.2" position="0 0 0.01" color="#FFF"></a-text>
-        </a-plane>
-
-        <!-- BOTÕES DE TESTE - ABORDAGEM 4: Listener direto no canvas -->
-        <a-plane id="test-btn-4" class="btn test-btn" position="-0.5 -0.45 0" width="0.4" height="0.15" 
-                 color="#FF33F5" opacity="0.9">
-          <a-text value="TEST 4: canvas" align="center" width="1.2" position="0 0 0.01" color="#FFF"></a-text>
-        </a-plane>
-
-        <!-- BOTÕES DE TESTE - ABORDAGEM 5: Raycaster direto -->
-        <a-plane id="test-btn-5" class="btn test-btn" position="0 -0.45 0" width="0.4" height="0.15" 
-                 color="#F5FF33" opacity="0.9"
-                 raycast-click="url:https://www.behance.net/randobando">
-          <a-text value="TEST 5: raycast" align="center" width="1.2" position="0 0 0.01" color="#000"></a-text>
-        </a-plane>
-
-        <!-- BOTÕES DE TESTE - ABORDAGEM 6: Listener de evento customizado -->
-        <a-plane id="test-btn-6" class="btn test-btn" position="0.5 -0.45 0" width="0.4" height="0.15" 
-                 color="#33FFF5" opacity="0.9"
-                 custom-event-click="url:https://randobando.tv/">
-          <a-text value="TEST 6: custom" align="center" width="1.2" position="0 0 0.01" color="#000"></a-text>
         </a-plane>
       </a-entity>
     </a-entity>
@@ -258,31 +219,14 @@
         keepAlive = true; playing = false;
         playSequence(KEEP);
         buttons.setAttribute('visible', 'true');
-        log('Botões agora visíveis! Verificando raycaster...');
-        
-        // Verificar configuração do raycaster
-        setTimeout(() => {
-          const camera = document.querySelector('a-camera');
-          const raycaster = camera.components.raycaster;
-          if (raycaster) {
-            log(`Raycaster configurado: objects=${raycaster.data.objects}, far=${raycaster.data.far}`);
-            log(`Raycaster intersections: ${raycaster.intersections.length}`);
-          }
-          
-          // Listar todos os botões
-          const allButtons = document.querySelectorAll('.btn');
-          log(`Total de botões com classe .btn: ${allButtons.length}`);
-          allButtons.forEach((btn, i) => {
-            log(`Botão ${i}: id=${btn.id}, visible=${btn.getAttribute('visible')}, position=${btn.getAttribute('position')}`);
-          });
-        }, 500);
+        log('Botões agora visíveis!');
       });
     }
 
     // Eventos MindAR
     anchor.addEventListener('targetFound', () => {
       detected = true;
-      statusEl.textContent = 'Alvo detectado — toque em “Iniciar animação”.';
+      statusEl.textContent = 'Alvo detectado — toque em "Iniciar animação".';
       sprite.setAttribute('visible', 'true');   // mostra o primeiro frame
       buttons.setAttribute('visible', 'false');
       keepAlive = false; playing = false;
@@ -319,57 +263,7 @@
     AFRAME.registerComponent('click-open-url', {
       schema: { url: {type: 'string'} },
       init(){
-        this.onClick = (e) => {
-          e.stopPropagation();
-          e.preventDefault();
-          
-          const url = this.data.url;
-          log(`[click-open-url] Clique detectado! Tentando abrir: ${url}`);
-          
-          // Método 1: Tentar window.open direto (pode ser bloqueado por pop-up blockers)
-          try {
-            const newWindow = window.open(url, '_blank', 'noopener,noreferrer');
-            if (newWindow) {
-              log(`[click-open-url] window.open bem-sucedido para: ${url}`);
-              newWindow.opener = null;
-            } else {
-              log(`[click-open-url] window.open bloqueado, tentando método alternativo...`);
-              // Método 2: Criar elemento <a> e simular clique
-              const a = document.createElement('a');
-              a.href = url;
-              a.target = '_blank';
-              a.rel = 'noopener noreferrer';
-              a.style.display = 'none';
-              document.body.appendChild(a);
-              
-              // Tentar disparar clique real
-              const clickEvent = new MouseEvent('click', {
-                view: window,
-                bubbles: true,
-                cancelable: true
-              });
-              a.dispatchEvent(clickEvent);
-              
-              setTimeout(() => a.remove(), 100);
-              log(`[click-open-url] Método alternativo executado para: ${url}`);
-            }
-          } catch (err) {
-            log(`[click-open-url] Erro ao abrir URL: ${err.message}`);
-            // Fallback: redirecionar a página atual
-            log(`[click-open-url] Fallback: redirecionando página atual para: ${url}`);
-            window.location.href = url;
-          }
-        };
-        
-        // Adicionar listeners para múltiplos tipos de eventos
-        this.el.addEventListener('click', this.onClick);
-        this.el.addEventListener('touchend', this.onClick);
-        
         log(`[click-open-url] Componente inicializado para URL: ${this.data.url}`);
-      },
-      remove(){ 
-        this.el.removeEventListener('click', this.onClick);
-        this.el.removeEventListener('touchend', this.onClick);
       }
     });
 
@@ -384,120 +278,6 @@
       remove(){
         this.el.removeEventListener('mouseenter', this.onEnter);
         this.el.removeEventListener('mouseleave', this.onLeave);
-      }
-    });
-
-    // ===== COMPONENTES DE TESTE =====
-    
-    // ABORDAGEM 1 e 2: Listeners diretos via JavaScript (mousedown e touchstart)
-    document.addEventListener('DOMContentLoaded', () => {
-      setTimeout(() => {
-        const testBtn1 = document.getElementById('test-btn-1');
-        const testBtn2 = document.getElementById('test-btn-2');
-        
-        if (testBtn1) {
-          testBtn1.addEventListener('mousedown', (e) => {
-            log('[TEST 1] mousedown detectado!');
-            window.open('https://randobando.tv/', '_blank');
-          });
-          log('[TEST 1] Listener mousedown adicionado');
-        }
-        
-        if (testBtn2) {
-          testBtn2.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            log('[TEST 2] touchstart detectado!');
-            window.open('https://www.instagram.com/randobando.tv/', '_blank');
-          });
-          log('[TEST 2] Listener touchstart adicionado');
-        }
-      }, 2000);
-    });
-
-    // ABORDAGEM 3: Componente simples com apenas window.open
-    AFRAME.registerComponent('simple-click', {
-      schema: { url: {type: 'string'} },
-      init(){
-        log(`[simple-click] Inicializado para: ${this.data.url}`);
-        this.el.addEventListener('click', (e) => {
-          log('[simple-click] Click detectado!');
-          window.open(this.data.url, '_blank');
-        });
-      }
-    });
-
-    // ABORDAGEM 4: Listener direto no canvas (removido fuse-click problemático)
-    document.addEventListener('DOMContentLoaded', () => {
-      setTimeout(() => {
-        const testBtn4 = document.getElementById('test-btn-4');
-        if (testBtn4) {
-          const canvas = document.querySelector('a-scene').canvas;
-          if (canvas) {
-            canvas.addEventListener('click', (e) => {
-              log('[TEST 4] Canvas click detectado!');
-              // Verificar se o raycaster está intersectando o botão 4
-              const camera = document.querySelector('a-camera');
-              const raycaster = camera.components.raycaster;
-              if (raycaster && raycaster.intersections.length > 0) {
-                const intersected = raycaster.intersections[0].object.el;
-                if (intersected && intersected.id === 'test-btn-4') {
-                  log('[TEST 4] Botão 4 detectado pelo raycaster!');
-                  window.open('https://www.instagram.com/randobando.tv/', '_blank');
-                }
-              }
-            });
-            log('[TEST 4] Listener de canvas adicionado');
-          }
-        }
-      }, 2000);
-    });
-
-    // ABORDAGEM 5: Raycaster direto
-    AFRAME.registerComponent('raycast-click', {
-      schema: { url: {type: 'string'} },
-      init(){
-        log(`[raycast-click] Inicializado para: ${this.data.url}`);
-        this.el.addEventListener('raycaster-intersected', (e) => {
-          log('[raycast-click] Raycaster intersected!');
-          this.raycaster = e.detail.el;
-        });
-        this.el.addEventListener('raycaster-intersected-cleared', () => {
-          log('[raycast-click] Raycaster cleared');
-          this.raycaster = null;
-        });
-        this.el.addEventListener('click', (e) => {
-          log('[raycast-click] Click detectado!');
-          if (this.raycaster) {
-            log('[raycast-click] Raycaster ativo, abrindo URL');
-            window.open(this.data.url, '_blank');
-          }
-        });
-      }
-    });
-
-    // ABORDAGEM 6: Evento customizado
-    AFRAME.registerComponent('custom-event-click', {
-      schema: { url: {type: 'string'} },
-      init(){
-        log(`[custom-event-click] Inicializado para: ${this.data.url}`);
-        const openUrl = () => {
-          log('[custom-event-click] Evento customizado disparado!');
-          window.open(this.data.url, '_blank');
-        };
-        
-        // Múltiplos listeners
-        this.el.addEventListener('click', openUrl);
-        this.el.addEventListener('touchend', openUrl);
-        this.el.addEventListener('mouseup', openUrl);
-        
-        // Listener no objeto Three.js diretamente
-        this.el.addEventListener('loaded', () => {
-          const mesh = this.el.getObject3D('mesh');
-          if (mesh) {
-            log('[custom-event-click] Mesh encontrado, adicionando listener direto');
-            mesh.userData.clickHandler = openUrl;
-          }
-        });
       }
     });
 
@@ -529,8 +309,6 @@
       
       // Função para processar clique/toque
       function handleInteraction(event) {
-        event.preventDefault();
-        
         // Obter coordenadas normalizadas do clique/toque
         let clientX, clientY;
         if (event.touches && event.touches.length > 0) {
@@ -548,8 +326,6 @@
         mouse.x = ((clientX - rect.left) / rect.width) * 2 - 1;
         mouse.y = -((clientY - rect.top) / rect.height) * 2 + 1;
         
-        log(`[Manual Click] Clique em (${mouse.x.toFixed(2)}, ${mouse.y.toFixed(2)})`);
-        
         // Configurar raycaster
         manualRaycaster.setFromCamera(mouse, camera);
         
@@ -565,12 +341,8 @@
           }
         });
         
-        log(`[Manual Click] Verificando ${buttonMeshes.length} meshes de botões`);
-        
         // Verificar intersecções
         const intersects = manualRaycaster.intersectObjects(buttonMeshes, true);
-        
-        log(`[Manual Click] Intersecções encontradas: ${intersects.length}`);
         
         if (intersects.length > 0) {
           // Encontrar o elemento A-Frame correspondente
@@ -592,27 +364,46 @@
           if (targetEl) {
             log(`[Manual Click] Botão clicado: ${targetEl.id || 'sem ID'}`);
             
-            // Tentar obter URL do componente
+            // Tentar obter URL do componente A-Frame
             let url = null;
             if (targetEl.components['click-open-url']) {
               url = targetEl.components['click-open-url'].data.url;
-            } else if (targetEl.components['simple-click']) {
-              url = targetEl.components['simple-click'].data.url;
-            } else if (targetEl.components['raycast-click']) {
-              url = targetEl.components['raycast-click'].data.url;
-            } else if (targetEl.components['custom-event-click']) {
-              url = targetEl.components['custom-event-click'].data.url;
             }
             
             if (url) {
               log(`[Manual Click] Abrindo URL: ${url}`);
-              window.open(url, '_blank');
-            } else {
-              log(`[Manual Click] Nenhuma URL encontrada para este botão`);
+              
+              // Tentar abrir o link
+              try {
+                const newWindow = window.open(url, '_blank', 'noopener,noreferrer');
+                if (newWindow) {
+                  newWindow.opener = null;
+                  log(`[Manual Click] Link aberto com sucesso!`);
+                } else {
+                  log(`[Manual Click] window.open bloqueado, tentando método alternativo...`);
+                  // Método alternativo: criar elemento <a> e simular clique
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.target = '_blank';
+                  a.rel = 'noopener noreferrer';
+                  a.style.display = 'none';
+                  document.body.appendChild(a);
+                  
+                  const clickEvent = new MouseEvent('click', {
+                    view: window,
+                    bubbles: true,
+                    cancelable: true
+                  });
+                  a.dispatchEvent(clickEvent);
+                  
+                  setTimeout(() => a.remove(), 100);
+                  log(`[Manual Click] Método alternativo executado`);
+                }
+              } catch (err) {
+                log(`[Manual Click] Erro: ${err.message}`);
+              }
             }
           }
-        } else {
-          log(`[Manual Click] Nenhum botão foi clicado`);
         }
       }
       
