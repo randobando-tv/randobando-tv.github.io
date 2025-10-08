@@ -3,22 +3,24 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
-  <title>AR — A-Frame 1.7.0 + MindAR (fix: case-sensitive paths + button components)</title>
+  <title>RANDO_AR — MindAR (UI & Events applied)</title>
 
-  <!-- A-Frame 1.7.0 -->
+  <!-- A-Frame -->
   <script src="https://aframe.io/releases/1.7.0/aframe.min.js"></script>
 
   <!-- MindAR (A-Frame integration) -->
+  <!-- CHANGE: usar mindar-image no lugar de arjs -->
   <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
 
   <style>
     html,body{margin:0;height:100%;background:transparent;overflow:hidden;}
+    /* HUD / Loader simples */
     #hud{
       position:fixed;left:0;top:0;right:0;padding:8px 12px;
       font:13px/1.35 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
       color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.8);
       display:flex;justify-content:space-between;gap:8px;align-items:center;
-      pointer-events:none;
+      pointer-events:none; z-index:10;
     }
     #status{opacity:.9}
     #debug{pointer-events:auto;background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.2);
@@ -27,7 +29,7 @@
       position:fixed;left:8px;bottom:8px;right:8px;
       background:rgba(0,0,0,.6);color:#fff;padding:8px;border-radius:8px;
       font:12px/1.35 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-      display:none;max-height:35vh;overflow:auto;white-space:pre-wrap
+      display:none;max-height:35vh;overflow:auto;white-space:pre-wrap; z-index:10;
     }
 
     /* CHANGE: liberar gestos de toque no canvas para que taps virem eventos imediatamente */
@@ -35,12 +37,14 @@
   </style>
 </head>
 <body>
+  <!-- Loader/HUD (MindAR não remove automático como o .arjs-loader) -->
   <div id="hud">
     <div id="status">Carregando…</div>
     <button id="debug" aria-pressed="false">Debug</button>
   </div>
   <div id="panel" aria-hidden="true"></div>
 
+  <!-- SCENE: MindAR em vez de AR.js -->
   <a-scene
     mindar-image="imageTargetSrc: assets/target.mind; filterMinCF: 0.001; filterBeta: 0.02;"
     vr-mode-ui="enabled: false"
@@ -49,17 +53,20 @@
     device-orientation-permission-ui="enabled: true">
 
     <a-assets timeout="20000">
-      <!-- IMPORTANT: Match GitHub repo folder names exactly (case-sensitive) -->
+      <!-- mantenha os nomes/pastas exatamente como no GitHub (case-sensitive) -->
       <img id="firstFrame" src="assets/Anim1/anim1_0001.png" crossorigin="anonymous"/>
     </a-assets>
 
+    <!-- Câmera + cursor p/ clique em objetos 3D -->
     <a-camera position="0 0 0"
               look-controls="enabled: false"
               cursor="rayOrigin: mouse; fuse: false"
               raycaster="objects: .btn; far: 20;"></a-camera>
 
+    <!-- CHANGE: âncora MindAR no lugar de <a-marker> -->
     <a-entity mindar-image-target="targetIndex: 0" id="anchor">
 
+      <!-- Sprite/Quad da animação -->
       <a-image id="sprite"
                src="#firstFrame"
                position="0 0 0"
@@ -69,7 +76,7 @@
                visible="false">
       </a-image>
 
-      <!-- CHANGE: declarative button components + URLs -->
+      <!-- Botões 3D declarativos -->
       <a-entity id="buttons" visible="false" position="0 0.05 0" rotation="0 0 0">
         <a-plane class="btn" position="-0.5 0 0" width="0.4" height="0.15" color="#222" opacity="0.9"
                  hover-color="over:#444; out:#222"
@@ -94,7 +101,8 @@
   </a-scene>
 
   <script>
-    // --- CHANGE: components para botões (declarativo, iOS-friendly) ---
+    // ============= COMPONENTES (botões) =============
+    // CHANGE: substituir redirecionamentos “automáticos” por clique do usuário (mais confiável no iOS)
     AFRAME.registerComponent('click-open-url', {
       schema: { url: {type: 'string'} },
       init(){
@@ -129,7 +137,7 @@
       }
     });
 
-    // --- Debug helpers (mantidos) ---
+    // ============= DEBUG UI =============
     const log = (...args)=>{ console.log(...args); addPanel(args.map(String).join(' ')); }
     const panel = document.getElementById('panel');
     const statusEl = document.getElementById('status');
@@ -141,7 +149,7 @@
     });
     function addPanel(s){ panel.textContent += s + "\n"; }
 
-    // --- Sequences (inalterado) ---
+    // ============= SEQUÊNCIAS (spritesheet em PNGs) =============
     const ANIM1 = {
       folder: 'assets/Anim1',
       pattern: i => `anim1_${String(i).padStart(4,'0')}.png`,
@@ -159,6 +167,7 @@
     const $ = sel => document.querySelector(sel);
     const sprite = $('#sprite');
     const buttons = $('#buttons');
+    const anchor = document.getElementById('anchor');
 
     async function preloadSequence(cfg){
       const results = [];
@@ -197,7 +206,8 @@
       if (frameTimer){ clearInterval(frameTimer); frameTimer = null; }
     }
 
-    const anchor = document.getElementById('anchor');
+    // ============= EVENTOS (MindAR) =============
+    // CHANGE: markerFound/markerLost -> targetFound/targetLost, escutando no âncora
     anchor.addEventListener('targetFound', async () => {
       detected = true;
       statusEl.textContent = 'Alvo detectado';
@@ -205,6 +215,7 @@
       buttons.setAttribute('visible', 'false');
       keepAlive = false; playing = false;
 
+      // pré-carrega as duas sequências
       const p1 = await preloadSequence(ANIM1);
       const p2 = await preloadSequence(KEEP);
       if (!p1.some(r=>r.ok)){
@@ -214,6 +225,7 @@
         log('ATENÇÃO: nenhum frame de KEEP foi carregado. Verifique o caminho/case.');
       }
     });
+
     anchor.addEventListener('targetLost', () => {
       detected = false;
       statusEl.textContent = 'Procurando alvo...';
@@ -223,8 +235,9 @@
       keepAlive = false; playing = false;
     });
 
-    // CHANGE: unificar gesto do usuário no MOBILE/desktop ouvindo direto no CANVAS da cena
-    document.querySelector('a-scene').addEventListener('click', () => {
+    // ============= TAP HANDLER (mobile/desktop confiável) =============
+    // CHANGE: ouvir taps diretamente no canvas da cena
+    function handleUserTap(){
       if (!detected || playing || keepAlive) return;
       playing = true;
       playSequence(ANIM1, () => {
@@ -232,25 +245,21 @@
         playSequence(KEEP);
         buttons.setAttribute('visible', 'true');
       });
-    });
+    }
 
-    // CHANGE: garantir que temos acesso ao canvas e registrar listeners de toque/clique
     const scene = document.querySelector('a-scene');
     scene.addEventListener('loaded', () => {
       const cv = scene.canvas;
       if (!cv) { log('canvas ainda não disponível'); return; }
-      // Observação: usar listeners no canvas evita que o A-Frame bloqueie o bubbling até <body>
       ['pointerdown','touchstart','click'].forEach(ev=>{
         cv.addEventListener(ev, () => handleUserTap(), {passive:true});
       });
       log('Tap handlers ativos no canvas:', 'pointerdown/touchstart/click');
+      statusEl.textContent = 'Aponte para o alvo';
     });
 
-    // CHANGE: removido o antigo document.body.addEventListener('click', …)
-
-    window.addEventListener('error', (e)=>{
-      log('window error:', e.message);
-    });
+    // Log de erros
+    window.addEventListener('error', (e)=>{ log('window error:', e.message); });
   </script>
 </body>
 </html>
