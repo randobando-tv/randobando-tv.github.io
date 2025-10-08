@@ -2,259 +2,195 @@
 <html lang="pt-br">
 <head>
   <meta charset="utf-8" />
-  <title>AR — DOM vídeo por trás (sem videoTexture)</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+  <title>AR — A-Frame 1.7.0 + MindAR (boilerplate)</title>
 
-  <!-- A-Frame + AR.js -->
-  <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@3.3.2/aframe/build/aframe-ar.js"></script>
+  <!-- A-Frame 1.7.0 -->
+  <script src="https://aframe.io/releases/1.7.0/aframe.min.js"></script>
 
-  <!-- Painel de ajustes -->
-  <script src="https://cdn.jsdelivr.net/npm/dat.gui@0.7.9/build/dat.gui.min.js"></script>
+  <!-- MindAR (A-Frame integration) -->
+  <!-- Versão prod com integração A-Frame; mantém API simples por <script>. -->
+  <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
 
   <style>
-    html, body { margin:0; overflow:hidden; }
-    /* deixa o WebGL transparente e o vídeo do AR.js visível por trás, em tela cheia */
-    canvas.a-canvas { background: transparent !important; }
-    #arjs-video {
-      position: fixed; inset: 0;
-      width: 100vw; height: 100vh;
-      object-fit: cover;           /* preenche sem distorcer */
-      z-index: -1;                 /* fica atrás do canvas */
+    html,body{margin:0;height:100%;background:transparent;overflow:hidden;}
+    /* Overlay de instruções (DOM overlay opcional) */
+    #hud{
+      position:fixed;left:0;top:0;right:0;padding:12px 16px;
+      font:14px/1.4 system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      color:#fff; text-shadow:0 1px 2px rgba(0,0,0,.8);
+      display:flex; justify-content:space-between; pointer-events:none;
     }
-    .dg { z-index: 9999 !important; }
+    #hint{opacity:.85}
   </style>
-
-  <script>
-    // =========================
-    //  CONFIG GLOBAL
-    // =========================
-    const CONFIG = {
-      scene: { sortObjects: true },
-
-      panel: {
-        posX: -1.2, posY: 0.0, posZ: -0.10,
-        rotX: 0, rotY: 0, rotZ: 0,
-        width: 1.6, height: 0.6,
-        color: "#000000", opacity: 0.80,
-        text: "SALVE TROPINHA!\nMELHOR VCS TOMAREM CUIDADO\nPQ O BANDO TA CHEGANDO\nPRA BAGUNCAR TUDO",
-        textColor: "#FFFFFF",
-        textWidth: 1.5,
-        textAlign: "left",
-        textOffsetX: -0.55, textOffsetY: 0.0, textOffsetZ: 0.20
-      },
-
-      cubes: {
-        x: 0.00, y: -0.50, z: 0.50,
-        size: 0.15, spacing: 0.22,
-        spinMs: 7000,
-        items: [
-          { src: "#overlay",  url: "https://vimeo.com/778620594" },
-          { src: "#fundo",    url: "https://www.instagram.com/randobando.tv" },
-          { src: "#overlay2", url: "https://dribbble.com/randobando/" },
-          { src: "#fundo2",   url: "https://www.behance.net/randobando" }
-        ]
-      },
-
-      art: {
-        posX: 0.50, posY: 0.00, posZ: 0.00,
-        rotX: 0, rotY: 0, rotZ: 0,
-        scale: 1.00,
-        width: 1.0, height: 1.0,
-        overlaySpinMs: 7000,
-        overlayDeltaZ: 0.002,
-        alphaTest: 0.02
-      },
-       model3d: {
-    src: "#modelo-3d",
-    posX: 0.0, posY: 0.5, posZ: 0.0,
-    rotX: 0, rotY: 0, rotZ: 0,
-    scale: 0.1,
-    spinMs: 7000
-    }
-    };
-
-    function emitConfigChanged(sceneEl){ sceneEl.emit('config-changed', {}, false); }
-
-    AFRAME.registerComponent('navigate-on-click', {
-      schema: { url: { type: 'string' } },
-      init(){ this.el.addEventListener('click', () => { if (this.data.url) window.open(this.data.url, '_blank'); }); }
-    });
-
-    AFRAME.registerComponent('text-panel', {
-      init(){
-        const bg = document.createElement('a-plane');
-        const tx = document.createElement('a-text');
-        bg.id='text-bg'; tx.id='text-tx';
-        this.el.appendChild(bg); this.el.appendChild(tx);
-
-        const scene = this.el.sceneEl;
-        const update = () => {
-          const P = CONFIG.panel;
-          this.el.setAttribute('position', `${P.posX} ${P.posY} ${P.posZ}`);
-          this.el.setAttribute('rotation', `${P.rotX} ${P.rotY} ${P.rotZ}`);
-          bg.setAttribute('width', P.width);
-          bg.setAttribute('height', P.height);
-          bg.setAttribute('color', P.color);
-          bg.setAttribute('material', `opacity:${P.opacity}; transparent:${P.opacity<1}; side:double; depthTest:true; depthWrite:true`);
-          tx.setAttribute('value', P.text);
-          tx.setAttribute('align', P.textAlign);
-          tx.setAttribute('color', P.textColor);
-          tx.setAttribute('width', P.textWidth);
-          tx.setAttribute('position', `${P.textOffsetX} ${P.textOffsetY} ${P.textOffsetZ}`);
-        };
-        update(); scene.addEventListener('config-changed', update);
-      }
-    });
-
-    AFRAME.registerComponent('icons-row', {
-      init(){
-        const scene = this.el.sceneEl;
-        const build = () => {
-          while (this.el.firstChild) this.el.removeChild(this.el.firstChild);
-          const C = CONFIG.cubes, n = C.items.length;
-          const startX = -((n - 1) * C.spacing) / 2;
-          this.el.setAttribute('position', `${C.x} ${C.y} ${C.z}`);
-          C.items.forEach((it, i) => {
-            const box = document.createElement('a-box');
-            const x = startX + i * C.spacing, s = C.size;
-            box.setAttribute('position', `${x} 0 0`);
-            box.setAttribute('width', s); box.setAttribute('height', s); box.setAttribute('depth', s);
-            if (it.src) box.setAttribute('src', it.src);
-            if (it.url) box.setAttribute('navigate-on-click', `url:${it.url}`);
-            box.setAttribute('animation', `property: rotation; to: 0 360 0; loop: true; dur: ${C.spinMs}; easing: linear`);
-            this.el.appendChild(box);
-          });
-        };
-        build(); scene.addEventListener('config-changed', build);
-      }
-    });
-
-    AFRAME.registerComponent('bg-overlay-pair', {
-      init(){
-        const scene = this.el.sceneEl;
-        const bg = document.createElement('a-image');
-        const ov = document.createElement('a-image');
-        bg.id='bg-img'; ov.id='ov-img';
-        this.el.appendChild(bg); this.el.appendChild(ov);
-
-        const update = () => {
-          const A = CONFIG.art;
-          this.el.setAttribute('position', `${A.posX} ${A.posY} ${A.posZ}`);
-          this.el.setAttribute('rotation', `${A.rotX} ${A.rotY} ${A.rotZ}`);
-          this.el.setAttribute('scale', `${A.scale} ${A.scale} ${A.scale}`);
-          bg.setAttribute('src', '#bgEye');
-          bg.setAttribute('width', A.width); bg.setAttribute('height', A.height);
-          bg.setAttribute('position', `0 0 0`);
-          bg.setAttribute('material', `transparent:false; side:double; depthTest:true; depthWrite:true`);
-          ov.setAttribute('src', '#overlayEye');
-          ov.setAttribute('width', A.width); ov.setAttribute('height', A.height);
-          ov.setAttribute('position', `0 0 ${A.overlayDeltaZ}`);
-          ov.setAttribute('material', `transparent:true; alphaTest:${A.alphaTest}; side:double; depthTest:true; depthWrite:false; polygonOffset:true; polygonOffsetFactor:-1; polygonOffsetUnits:-1`);
-          ov.setAttribute('animation', `property: rotation; to: 0 0 360; loop: true; dur: ${A.overlaySpinMs}; easing: linear`);
-        };
-        update(); scene.addEventListener('config-changed', update);
-      }
-    });
-
-    AFRAME.registerComponent('controlled-model', {
-  init(){
-    const scene = this.el.sceneEl;
-    const model = document.createElement('a-gltf-model');
-    this.el.appendChild(model);
-
-    const update = () => {
-      const M = CONFIG.model3d;
-      this.el.setAttribute('position', `${M.posX} ${M.posY} ${M.posZ}`);
-      this.el.setAttribute('rotation', `${M.rotX} ${M.rotY} ${M.rotZ}`);
-      this.el.setAttribute('scale', `${M.scale} ${M.scale} ${M.scale}`);
-
-      model.setAttribute('src', M.src);
-      model.setAttribute('animation', `property: rotation; to: 0 360 0; loop: true; dur: ${M.spinMs}; easing: linear`);
-    };
-    update();
-    scene.addEventListener('config-changed', update);
-  }
-    });
-
-    window.addEventListener('load', () => {
-      const gui = new dat.GUI({ name:'Controles' });
-      const scene = document.querySelector('a-scene');
-
-      const fPanel = gui.addFolder('Retângulo + Texto');
-      fPanel.add(CONFIG.panel,'posX',-2,2,0.01).onChange(()=>emitConfigChanged(scene));
-      fPanel.add(CONFIG.panel,'posY',-1,1,0.01).onChange(()=>emitConfigChanged(scene));
-      fPanel.add(CONFIG.panel,'posZ',-1,1,0.01).onChange(()=>emitConfigChanged(scene));
-      fPanel.add(CONFIG.panel,'width',0.2,3,0.01).onChange(()=>emitConfigChanged(scene));
-      fPanel.add(CONFIG.panel,'height',0.1,2,0.01).onChange(()=>emitConfigChanged(scene));
-      fPanel.add(CONFIG.panel,'opacity',0,1,0.01).onChange(()=>emitConfigChanged(scene));
-      fPanel.addColor(CONFIG.panel,'color').onChange(()=>emitConfigChanged(scene));
-      fPanel.add(CONFIG.panel,'textWidth',0.3,3,0.01).onChange(()=>emitConfigChanged(scene));
-      fPanel.add(CONFIG.panel,'textOffsetX',-1,1,0.01).onChange(()=>emitConfigChanged(scene));
-      fPanel.add(CONFIG.panel,'textOffsetZ',-0.5,0.5,0.01).onChange(()=>emitConfigChanged(scene));
-      fPanel.open();
-
-      const fCubes = gui.addFolder('Cubos');
-      fCubes.add(CONFIG.cubes,'x',-3,3,0.01).onChange(()=>emitConfigChanged(scene));
-      fCubes.add(CONFIG.cubes,'y',-3,3,0.01).onChange(()=>emitConfigChanged(scene));
-      fCubes.add(CONFIG.cubes,'z',-3,3,0.01).onChange(()=>emitConfigChanged(scene));
-      fCubes.add(CONFIG.cubes,'size',0.05,0.5,0.005).onChange(()=>emitConfigChanged(scene));
-      fCubes.add(CONFIG.cubes,'spacing',0.1,0.6,0.005).onChange(()=>emitConfigChanged(scene));
-      fCubes.add(CONFIG.cubes,'spinMs',500,20000,100).onChange(()=>emitConfigChanged(scene));
-      fCubes.open();
-
-      const fArt = gui.addFolder('BG + Overlay');
-      fArt.add(CONFIG.art,'posX',-2,2,0.01).onChange(()=>emitConfigChanged(scene));
-      fArt.add(CONFIG.art,'posY',-1,1,0.01).onChange(()=>emitConfigChanged(scene));
-      fArt.add(CONFIG.art,'posZ',-1,1,0.01).onChange(()=>emitConfigChanged(scene));
-      fArt.add(CONFIG.art,'scale',0.25,3,0.01).onChange(()=>emitConfigChanged(scene));
-      fArt.add(CONFIG.art,'overlaySpinMs',500,20000,100).onChange(()=>emitConfigChanged(scene));
-      fArt.add(CONFIG.art,'overlayDeltaZ',0.000,1,0.001).name('Separação Overlay').onChange(()=>emitConfigChanged(scene));
-      fArt.add(CONFIG.art,'alphaTest',0,0.2,0.005).onChange(()=>emitConfigChanged(scene));
-      fArt.open();
-
-      const fModel = gui.addFolder('Modelo 3D');
-      fModel.add(CONFIG.model3d, 'posX', -2, 2, 0.01).name('Posição X').onChange(()=>emitConfigChanged(scene));
-      fModel.add(CONFIG.model3d, 'posY', -2, 2, 0.01).name('Posição Y').onChange(()=>emitConfigChanged(scene));
-      fModel.add(CONFIG.model3d, 'posZ', -2, 2, 0.01).name('Posição Z').onChange(()=>emitConfigChanged(scene));
-      fModel.add(CONFIG.model3d, 'rotX', 0, 360, 1).name('Rotação X').onChange(()=>emitConfigChanged(scene));
-      fModel.add(CONFIG.model3d, 'rotY', 0, 360, 1).name('Rotação Y').onChange(()=>emitConfigChanged(scene));
-      fModel.add(CONFIG.model3d, 'rotZ', 0, 360, 1).name('Rotação Z').onChange(()=>emitConfigChanged(scene));
-      fModel.add(CONFIG.model3d, 'scale', 0.01, 1, 0.005).name('Escala').onChange(()=>emitConfigChanged(scene));
-      fModel.add(CONFIG.model3d, 'spinMs', 500, 20000, 100).name('Vel. Rotação').onChange(()=>emitConfigChanged(scene));
-      fModel.open();
-    });
-
-
-  </script>
 </head>
 <body>
-  <a-scene
-    renderer="alpha:true; sortObjects:true"
-    arjs="sourceType: webcam; trackingMethod: best; debugUIEnabled: false"
-    vr-mode-ui="enabled:false"
-    style="position:fixed; inset:0; width:100vw; height:100vh;">
+  <div id="hud">
+    <div id="hint">Aponte para o alvo. Toque para iniciar a animação.</div>
+    <div id="status"></div>
+  </div>
 
-    <a-assets>
-      <img id="overlay"  src="https://lh3.googleusercontent.com/d/1QXdttGZ-0KpGNQgzminS_kpNM-WyEkTh">
-      <img id="fundo"    src="https://lh3.googleusercontent.com/d/1yQfUlam96ySUcfxFwx4S1pvbWTjiGB4Q">
-      <img id="overlay2" src="https://lh3.googleusercontent.com/d/1QXdttGZ-0KpGNQgzminS_kpNM-WyEkTh">
-      <img id="fundo2"   src="https://lh3.googleusercontent.com/d/1yQfUlam96ySUcfxFwx4S1pvbWTjiGB4Q">
-      <img id="bgEye"      src="img/assets/Entrega1_BG_OLHO.png">
-      <img id="overlayEye" src="img/assets/Entrega1_OVERLAY.png">
-      <a-asset-item id="modelo-3d" src="models/meu-modelo.glb"></a-asset-item>
+  <!-- Cena A-Frame com MindAR -->
+  <a-scene
+    mindar-image="imageTargetSrc: assets/target.mind; filterMinCF: 0.001; filterBeta: 0.02;"
+    vr-mode-ui="enabled: false"
+    renderer="colorManagement: true, physicallyCorrectLights: true, alpha: true, antialias: true"
+    embedded
+    device-orientation-permission-ui="enabled: true">
+
+    <!-- Assets (placeholder de uma única imagem para o 1º frame) -->
+    <a-assets timeout="15000">
+      <img id="firstFrame" src="assets/anim1/anim1_0001.png" crossorigin="anonymous"/>
     </a-assets>
 
-    <a-marker preset="hiro" smooth="true" smoothCount="5" smoothTolerance="0.01" smoothThreshold="2">
-      <a-entity rotation="-90 0 0">
-        <a-entity id="textPanel" text-panel></a-entity>
-        <a-entity id="iconsRow" icons-row></a-entity>
-        <a-entity id="artPair" bg-overlay-pair></a-entity>
-        <a-entity id="controlledModel" controlled-model></a-entity>
-      </a-entity>
-    </a-marker>
+    <!-- Câmera do MindAR -->
+    <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-    <a-entity camera cursor="rayOrigin: mouse"></a-entity>
+    <!-- Âncora: tudo aqui segue o alvo detectado -->
+    <a-entity mindar-image-target="targetIndex: 0" id="anchor">
+
+      <!-- Personagem (primeiro frame) - aparece ao detectar o alvo -->
+      <a-image id="sprite"
+               src="#firstFrame"
+               position="0 0 0"
+               rotation="0 0 0"
+               transparent="true"
+               alpha-test="0.01"
+               width="1.2" height="1.2"
+               visible="false">
+      </a-image>
+
+      <!-- Botões (invisíveis até o keep-alive iniciar) -->
+      <a-entity id="buttons" visible="false" position="0 0.05 0" rotation="0 0 0">
+        <!-- Botão 1 -->
+        <a-plane class="btn" position="-0.5 0 0" width="0.4" height="0.15" color="#222" opacity="0.8">
+          <a-text value="Site A" align="center" width="1.2" position="0 0 0.01"></a-text>
+        </a-plane>
+        <!-- Botão 2 -->
+        <a-plane class="btn" position="0 0 0" width="0.4" height="0.15" color="#222" opacity="0.8">
+          <a-text value="Site B" align="center" width="1.2" position="0 0 0.01"></a-text>
+        </a-plane>
+        <!-- Botão 3 -->
+        <a-plane class="btn" position="0.5 0 0" width="0.4" height="0.15" color="#222" opacity="0.8">
+          <a-text value="Site C" align="center" width="1.2" position="0 0 0.01"></a-text>
+        </a-plane>
+      </a-entity>
+
+    </a-entity>
   </a-scene>
+
+  <script>
+    // --------- Configuração da sequência PNG ----------
+    // Ajuste os padrões de nomes/conteúdo aqui conforme seus arquivos.
+    const ANIM1 = {
+      folder: 'assets/anim1',
+      pattern: i => `anim1_${String(i).padStart(4,'0')}.png`,
+      start: 1, end: 6, fps: 10
+    };
+    const KEEP = {
+      folder: 'assets/keepalive',
+      pattern: i => `keep_${String(i).padStart(4,'0')}.png`,
+      start: 1, end: 6, fps: 6, loop: true
+    };
+
+    // Estado simples
+    let detected = false;
+    let playing = false;
+    let keepAlive = false;
+    let frameTimer = null;
+    let currentFrame = 1;
+    let currentAnim = null;
+
+    const $ = sel => document.querySelector(sel);
+    const sprite = $('#sprite');
+    const buttons = $('#buttons');
+    const statusEl = $('#status');
+
+    // Pré-carrega uma sequência (para reduzir piscadas em mobile)
+    async function preloadSequence(cfg){
+      const promises = [];
+      for (let i = cfg.start; i <= cfg.end; i++){
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.src = `${cfg.folder}/${cfg.pattern(i)}`;
+        promises.push(new Promise(res => { img.onload = res; img.onerror = res; }));
+      }
+      await Promise.all(promises);
+    }
+
+    // Reproduz a sequência trocando o material.src do a-image
+    function playSequence(cfg, onEnd){
+      stopSequence();
+      currentAnim = cfg;
+      currentFrame = cfg.start;
+      const interval = 1000 / (cfg.fps || 10);
+      frameTimer = setInterval(() => {
+        const src = `${cfg.folder}/${cfg.pattern(currentFrame)}`;
+        sprite.setAttribute('src', src);
+        currentFrame++;
+        if (currentFrame > cfg.end){
+          if (cfg.loop){
+            currentFrame = cfg.start;
+          } else {
+            stopSequence();
+            if (onEnd) onEnd();
+          }
+        }
+      }, interval);
+    }
+    function stopSequence(){
+      if (frameTimer){ clearInterval(frameTimer); frameTimer = null; }
+    }
+
+    // Eventos MindAR (detecção do alvo)
+    const anchor = document.getElementById('anchor');
+    anchor.addEventListener('targetFound', async () => {
+      detected = true;
+      statusEl.textContent = 'Alvo detectado';
+      // Mostrar primeiro frame “parado”
+      sprite.setAttribute('visible', 'true');
+      buttons.setAttribute('visible', 'false');
+      keepAlive = false;
+      playing = false;
+
+      // Pré-carregar (não bloqueia a UI)
+      preloadSequence(ANIM1);
+      preloadSequence(KEEP);
+    });
+    anchor.addEventListener('targetLost', () => {
+      detected = false;
+      statusEl.textContent = 'Procurando alvo...';
+      sprite.setAttribute('visible', 'false');
+      buttons.setAttribute('visible', 'false');
+      stopSequence();
+      keepAlive = false;
+      playing = false;
+    });
+
+    // Toque em qualquer lugar da tela -> inicia Animação 1 (se alvo presente)
+    document.body.addEventListener('click', () => {
+      if (!detected) return;
+      if (playing || keepAlive) return;
+      playing = true;
+      playSequence(ANIM1, () => {
+        // Termina anim1 -> entra keep-alive em loop + mostra botões
+        keepAlive = true;
+        playing = false;
+        playSequence(KEEP);
+        buttons.setAttribute('visible', 'true');
+      });
+    });
+
+    // Clique dos botões (abre links). Em iOS, precisa ser gesto do usuário (ok).
+    const btns = document.querySelectorAll('.btn');
+    const links = ['https://randobando.tv/','https://www.instagram.com/randobando.tv/','https://www.behance.net/randobando'];
+    btns.forEach((el, idx) => {
+      el.addEventListener('click', (e) => {
+        e.stopPropagation(); // evita re-disparar o click do body
+        const url = links[idx];
+        window.open(url, '_blank', 'noreferrer');
+      });
+    });
+  </script>
 </body>
 </html>
