@@ -3,18 +3,18 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
-  <title>RANDO_AR — MindAR (UI & Events applied)</title>
+  <title>RANDO_AR — MindAR com Botão de Início</title>
 
   <!-- A-Frame -->
   <script src="https://aframe.io/releases/1.7.0/aframe.min.js"></script>
-
   <!-- MindAR (A-Frame integration) -->
-  <!-- CHANGE: usar mindar-image no lugar de arjs -->
   <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
 
   <style>
     html,body{margin:0;height:100%;background:transparent;overflow:hidden;}
-    /* HUD / Loader simples */
+    a-scene, canvas { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+
+    /* HUD / DEBUG */
     #hud{
       position:fixed;left:0;top:0;right:0;padding:8px 12px;
       font:13px/1.35 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
@@ -32,19 +32,26 @@
       display:none;max-height:35vh;overflow:auto;white-space:pre-wrap; z-index:10;
     }
 
-    /* CHANGE: liberar gestos de toque no canvas para que taps virem eventos imediatamente */
-    a-scene, canvas { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+    /* Botão de início (overlay DOM) */
+    #startBtn{
+      position:fixed;left:50%;bottom:14px;transform:translateX(-50%);
+      z-index:12; pointer-events:auto;
+      border-radius:999px; padding:12px 18px; font:600 16px/1.2 system-ui, sans-serif;
+      background:#111; color:#fff; border:1px solid rgba(255,255,255,.3); opacity:.95;
+      box-shadow:0 6px 20px rgba(0,0,0,.35); cursor:pointer;
+      display:none;
+    }
+    #startBtn:active{ transform:translateX(-50%) scale(.98); }
   </style>
 </head>
 <body>
-  <!-- Loader/HUD (MindAR não remove automático como o .arjs-loader) -->
   <div id="hud">
     <div id="status">Carregando…</div>
     <button id="debug" aria-pressed="false">Debug</button>
   </div>
   <div id="panel" aria-hidden="true"></div>
+  <button id="startBtn">▶ Iniciar animação</button>
 
-  <!-- SCENE: MindAR em vez de AR.js -->
   <a-scene
     mindar-image="imageTargetSrc: assets/target.mind; filterMinCF: 0.001; filterBeta: 0.02;"
     vr-mode-ui="enabled: false"
@@ -52,31 +59,26 @@
     embedded
     device-orientation-permission-ui="enabled: true">
 
-    <a-assets timeout="20000">
-      <!-- mantenha os nomes/pastas exatamente como no GitHub (case-sensitive) -->
+    <a-assets id="assets" timeout="20000">
+      <!-- Primeiro frame: deixa algo pronto na tela enquanto pré-carrega -->
       <img id="firstFrame" src="assets/Anim1/anim1_0001.png" crossorigin="anonymous"/>
     </a-assets>
 
-    <!-- Câmera + cursor p/ clique em objetos 3D -->
     <a-camera position="0 0 0"
               look-controls="enabled: false"
               cursor="rayOrigin: mouse; fuse: false"
               raycaster="objects: .btn; far: 20;"></a-camera>
 
-    <!-- CHANGE: âncora MindAR no lugar de <a-marker> -->
     <a-entity mindar-image-target="targetIndex: 0" id="anchor">
-
-      <!-- Sprite/Quad da animação -->
+      <!-- a-image é conveniente; vamos trocar material.src por IDs de assets -->
       <a-image id="sprite"
                src="#firstFrame"
                position="0 0 0"
-               rotation="0 0 0"
                material="transparent: true; alphaTest: 0.01; side: double; opacity: 1"
                width="1.2" height="1.2"
                visible="false">
       </a-image>
 
-      <!-- Botões 3D declarativos -->
       <a-entity id="buttons" visible="false" position="0 0.05 0" rotation="0 0 0">
         <a-plane class="btn" position="-0.5 0 0" width="0.4" height="0.15" color="#222" opacity="0.9"
                  hover-color="over:#444; out:#222"
@@ -96,31 +98,175 @@
           <a-text value="behance" align="center" width="1.2" position="0 0 0.01"></a-text>
         </a-plane>
       </a-entity>
-
     </a-entity>
   </a-scene>
 
   <script>
-    // ============= COMPONENTES (botões) =============
-    // CHANGE: substituir redirecionamentos “automáticos” por clique do usuário (mais confiável no iOS)
+    // ===== Helpers de UI/Debug =====
+    const log = (...args)=>{ console.log(...args); addPanel(args.map(String).join(' ')); }
+    const panel = document.getElementById('panel');
+    const statusEl = document.getElementById('status');
+    document.getElementById('debug').addEventListener('click', (e)=>{
+      const on = panel.style.display !== 'block';
+      panel.style.display = on ? 'block' : 'none';
+      e.currentTarget.setAttribute('aria-pressed', String(on));
+      panel.setAttribute('aria-hidden', String(!on));
+    });
+    function addPanel(s){ panel.textContent += s + "\n"; }
+
+    // ===== Sequências (vamos usar IDs dentro do <a-assets>) =====
+    const ANIM1 = {
+      name: 'anim1', folder: 'assets/Anim1',
+      pattern: i => `anim1_${String(i).padStart(4,'0')}.png`,
+      start: 1, end: 6, fps: 10, ids: []
+    };
+    const KEEP = {
+      name: 'keep', folder: 'assets/Keepalive',
+      pattern: i => `keep_${String(i).padStart(4,'0')}.png`,
+      start: 1, end: 6, fps: 6, loop: true, ids: []
+    };
+
+    const assetsEl = document.getElementById('assets');
+    const sprite = document.getElementById('sprite');
+    const buttons = document.getElementById('buttons');
+    const startBtn = document.getElementById('startBtn');
+    const anchor = document.getElementById('anchor');
+
+    let detected = false, playing = false, keepAlive = false;
+    let timerId = null, currentFrame = 1, currentCfg = null;
+
+    function ensureAssetImg(id, src){
+      let el = document.getElementById(id);
+      if (!el){
+        el = document.createElement('img');
+        el.setAttribute('id', id);
+        el.setAttribute('src', src);
+        el.setAttribute('crossorigin', 'anonymous');
+        assetsEl.appendChild(el);
+      }
+      return el;
+    }
+
+    async function preloadSequence(cfg){
+      const ids = [];
+      const promises = [];
+      for (let i = cfg.start; i <= cfg.end; i++){
+        const id = `${cfg.name}_${String(i).padStart(4,'0')}`;
+        const src = `${cfg.folder}/${cfg.pattern(i)}`;
+        const img = ensureAssetImg(id, src);
+        ids.push(id);
+        if (!img.complete){
+          promises.push(new Promise(res=>{
+            img.addEventListener('load', res, {once:true});
+            img.addEventListener('error', res, {once:true});
+          }));
+        }
+      }
+      await Promise.all(promises);
+      cfg.ids = ids;
+      log(`preload ${cfg.name}: ${ids.length} frames prontos`);
+      return ids.length;
+    }
+
+    function setSpriteById(assetId){
+      const ref = `#${assetId}`;
+      // definir nos dois lugares para forçar atualização do material
+      sprite.setAttribute('src', ref);
+      sprite.setAttribute('material', 'src', ref);
+    }
+
+    function stopSequence(){
+      if (timerId){ clearTimeout(timerId); timerId = null; }
+    }
+
+    function playSequence(cfg, onEnd){
+      stopSequence();
+      currentCfg = cfg;
+      currentFrame = cfg.start;
+      const interval = 1000 / (cfg.fps || 10);
+
+      const step = () => {
+        const idx = currentFrame - cfg.start;               // 0-based
+        const assetId = cfg.ids[idx];
+        if (assetId){ setSpriteById(assetId); }
+        currentFrame++;
+        if (currentFrame > cfg.end){
+          if (cfg.loop){ currentFrame = cfg.start; timerId = setTimeout(step, interval); }
+          else { stopSequence(); onEnd && onEnd(); }
+        } else {
+          timerId = setTimeout(step, interval);
+        }
+      };
+      step();
+    }
+
+    async function startAnimationFlow(){
+      if (!detected || playing || keepAlive) return;
+      playing = true;
+      startBtn.style.display = 'none';
+
+      // garante assets carregados
+      await preloadSequence(ANIM1);
+      await preloadSequence(KEEP);
+
+      sprite.setAttribute('visible', 'true');
+
+      playSequence(ANIM1, () => {
+        keepAlive = true; playing = false;
+        playSequence(KEEP);
+        buttons.setAttribute('visible', 'true');
+      });
+    }
+
+    // Eventos MindAR
+    anchor.addEventListener('targetFound', () => {
+      detected = true;
+      statusEl.textContent = 'Alvo detectado — toque em “Iniciar animação”.';
+      sprite.setAttribute('visible', 'true');   // mostra o primeiro frame
+      buttons.setAttribute('visible', 'false');
+      keepAlive = false; playing = false;
+      startBtn.style.display = 'inline-block';  // mostra botão de início
+    });
+
+    anchor.addEventListener('targetLost', () => {
+      detected = false;
+      statusEl.textContent = 'Procurando alvo...';
+      sprite.setAttribute('visible', 'false');
+      buttons.setAttribute('visible', 'false');
+      startBtn.style.display = 'none';
+      stopSequence();
+      keepAlive = false; playing = false;
+    });
+
+    // Clique no botão (gesto explícito do usuário)
+    startBtn.addEventListener('click', startAnimationFlow);
+
+    // Fallback: tap no canvas também inicia
+    const scene = document.querySelector('a-scene');
+    scene.addEventListener('loaded', () => {
+      const cv = scene.canvas;
+      if (cv){
+        ['pointerdown','touchstart','click'].forEach(ev=>{
+          cv.addEventListener(ev, () => startAnimationFlow(), {passive:true});
+        });
+        log('Tap handlers no canvas prontos (pointerdown/touchstart/click)');
+      }
+      statusEl.textContent = 'Aponte para o alvo';
+    });
+
+    // Componentes de botão 3D
     AFRAME.registerComponent('click-open-url', {
       schema: { url: {type: 'string'} },
       init(){
         this.onClick = (e) => {
           e.stopPropagation();
           const a = document.createElement('a');
-          a.href = this.data.url;
-          a.target = '_blank';
-          a.rel = 'noopener';
-          document.body.appendChild(a);
-          a.click();
-          a.remove();
+          a.href = this.data.url; a.target = '_blank'; a.rel = 'noopener';
+          document.body.appendChild(a); a.click(); a.remove();
         };
         this.el.addEventListener('click', this.onClick);
       },
-      remove(){
-        this.el.removeEventListener('click', this.onClick);
-      }
+      remove(){ this.el.removeEventListener('click', this.onClick); }
     });
 
     AFRAME.registerComponent('hover-color', {
@@ -135,127 +281,6 @@
         this.el.removeEventListener('mouseenter', this.onEnter);
         this.el.removeEventListener('mouseleave', this.onLeave);
       }
-    });
-
-    // ============= DEBUG UI =============
-    const log = (...args)=>{ console.log(...args); addPanel(args.map(String).join(' ')); }
-    const panel = document.getElementById('panel');
-    const statusEl = document.getElementById('status');
-    document.getElementById('debug').addEventListener('click', (e)=>{
-      const on = panel.style.display !== 'block';
-      panel.style.display = on ? 'block' : 'none';
-      e.currentTarget.setAttribute('aria-pressed', String(on));
-      panel.setAttribute('aria-hidden', String(!on));
-    });
-    function addPanel(s){ panel.textContent += s + "\n"; }
-
-    // ============= SEQUÊNCIAS (spritesheet em PNGs) =============
-    const ANIM1 = {
-      folder: 'assets/Anim1',
-      pattern: i => `anim1_${String(i).padStart(4,'0')}.png`,
-      start: 1, end: 6, fps: 10
-    };
-    const KEEP = {
-      folder: 'assets/Keepalive',
-      pattern: i => `keep_${String(i).padStart(4,'0')}.png`,
-      start: 1, end: 6, fps: 6, loop: true
-    };
-
-    let detected = false, playing = false, keepAlive = false;
-    let frameTimer = null, currentFrame = 1, currentAnim = null;
-
-    const $ = sel => document.querySelector(sel);
-    const sprite = $('#sprite');
-    const buttons = $('#buttons');
-    const anchor = document.getElementById('anchor');
-
-    async function preloadSequence(cfg){
-      const results = [];
-      for (let i = cfg.start; i <= cfg.end; i++){
-        const url = `${cfg.folder}/${cfg.pattern(i)}?v=2`;
-        results.push(new Promise((resolve)=>{
-          const img = new Image();
-          img.crossOrigin = 'anonymous';
-          img.onload = ()=>{ log('preload OK', url); resolve({url, ok:true}); };
-          img.onerror = ()=>{ log('preload ERROR', url); resolve({url, ok:false}); };
-          img.src = url;
-        }));
-      }
-      const out = await Promise.all(results);
-      const ok = out.filter(r=>r.ok).length;
-      const ko = out.length - ok;
-      log(`preload done: OK=${ok} ERR=${ko}`);
-      return out;
-    }
-
-    function playSequence(cfg, onEnd){
-      stopSequence();
-      currentAnim = cfg; currentFrame = cfg.start;
-      const interval = 1000 / (cfg.fps || 10);
-      frameTimer = setInterval(() => {
-        const src = `${cfg.folder}/${cfg.pattern(currentFrame)}?v=2`;
-        sprite.setAttribute('src', src);
-        currentFrame++;
-        if (currentFrame > cfg.end){
-          if (cfg.loop){ currentFrame = cfg.start; }
-          else { stopSequence(); if (onEnd) onEnd(); }
-        }
-      }, interval);
-    }
-    function stopSequence(){
-      if (frameTimer){ clearInterval(frameTimer); frameTimer = null; }
-    }
-
-    // ============= EVENTOS (MindAR) =============
-    // CHANGE: markerFound/markerLost -> targetFound/targetLost, escutando no âncora
-    anchor.addEventListener('targetFound', async () => {
-      detected = true;
-      statusEl.textContent = 'Alvo detectado';
-      sprite.setAttribute('visible', 'true');
-      buttons.setAttribute('visible', 'false');
-      keepAlive = false; playing = false;
-
-      // pré-carrega as duas sequências
-      const p1 = await preloadSequence(ANIM1);
-      const p2 = await preloadSequence(KEEP);
-      if (!p1.some(r=>r.ok)){
-        log('ATENÇÃO: nenhum frame de ANIM1 foi carregado. Verifique o caminho/case.');
-      }
-      if (!p2.some(r=>r.ok)){
-        log('ATENÇÃO: nenhum frame de KEEP foi carregado. Verifique o caminho/case.');
-      }
-    });
-
-    anchor.addEventListener('targetLost', () => {
-      detected = false;
-      statusEl.textContent = 'Procurando alvo...';
-      sprite.setAttribute('visible', 'false');
-      buttons.setAttribute('visible', 'false');
-      stopSequence();
-      keepAlive = false; playing = false;
-    });
-
-    // ============= TAP HANDLER (mobile/desktop confiável) =============
-    // CHANGE: ouvir taps diretamente no canvas da cena
-    function handleUserTap(){
-      if (!detected || playing || keepAlive) return;
-      playing = true;
-      playSequence(ANIM1, () => {
-        keepAlive = true; playing = false;
-        playSequence(KEEP);
-        buttons.setAttribute('visible', 'true');
-      });
-    }
-
-    const scene = document.querySelector('a-scene');
-    scene.addEventListener('loaded', () => {
-      const cv = scene.canvas;
-      if (!cv) { log('canvas ainda não disponível'); return; }
-      ['pointerdown','touchstart','click'].forEach(ev=>{
-        cv.addEventListener(ev, () => handleUserTap(), {passive:true});
-      });
-      log('Tap handlers ativos no canvas:', 'pointerdown/touchstart/click');
-      statusEl.textContent = 'Aponte para o alvo';
     });
 
     // Log de erros
