@@ -29,6 +29,9 @@
       font:12px/1.35 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
       display:none;max-height:35vh;overflow:auto;white-space:pre-wrap
     }
+
+    /* CHANGE: liberar gestos de toque no canvas para que taps virem eventos imediatamente */
+    a-scene, canvas { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
   </style>
 </head>
 <body>
@@ -47,7 +50,6 @@
 
     <a-assets timeout="20000">
       <!-- IMPORTANT: Match GitHub repo folder names exactly (case-sensitive) -->
-      <!-- You said your repo has 'assets/Anim1' and 'assets/Keepalive' -->
       <img id="firstFrame" src="assets/Anim1/anim1_0001.png" crossorigin="anonymous"/>
     </a-assets>
 
@@ -92,7 +94,7 @@
   </a-scene>
 
   <script>
-    // --- CHANGE: components for buttons (declarative, iOS-friendly) ---
+    // --- CHANGE: components para botões (declarativo, iOS-friendly) ---
     AFRAME.registerComponent('click-open-url', {
       schema: { url: {type: 'string'} },
       init(){
@@ -137,7 +139,7 @@
       e.currentTarget.setAttribute('aria-pressed', String(on));
       panel.setAttribute('aria-hidden', String(!on));
     });
-    function addPanel(s){ panel.textContent += s + "\\n"; }
+    function addPanel(s){ panel.textContent += s + "\n"; }
 
     // --- Sequences (inalterado) ---
     const ANIM1 = {
@@ -157,12 +159,6 @@
     const $ = sel => document.querySelector(sel);
     const sprite = $('#sprite');
     const buttons = $('#buttons');
-
-    function openURL(url){
-      const a = document.createElement('a');
-      a.href = url; a.target = '_blank'; a.rel = 'noopener';
-      document.body.appendChild(a); a.click(); a.remove();
-    }
 
     async function preloadSequence(cfg){
       const results = [];
@@ -227,7 +223,8 @@
       keepAlive = false; playing = false;
     });
 
-    document.body.addEventListener('click', () => {
+    // CHANGE: unificar gesto do usuário no MOBILE/desktop ouvindo direto no CANVAS da cena
+    function handleUserTap(){
       if (!detected || playing || keepAlive) return;
       playing = true;
       playSequence(ANIM1, () => {
@@ -235,10 +232,21 @@
         playSequence(KEEP);
         buttons.setAttribute('visible', 'true');
       });
+    }
+
+    // CHANGE: garantir que temos acesso ao canvas e registrar listeners de toque/clique
+    const scene = document.querySelector('a-scene');
+    scene.addEventListener('loaded', () => {
+      const cv = scene.canvas;
+      if (!cv) { log('canvas ainda não disponível'); return; }
+      // Observação: usar listeners no canvas evita que o A-Frame bloqueie o bubbling até <body>
+      ['pointerdown','touchstart','click'].forEach(ev=>{
+        cv.addEventListener(ev, () => handleUserTap(), {passive:true});
+      });
+      log('Tap handlers ativos no canvas:', 'pointerdown/touchstart/click');
     });
 
-    // CHANGE: removido trecho anterior de listeners imperativos .btn
-    // pois agora cada botão tem seus próprios componentes declarativos.
+    // CHANGE: removido o antigo document.body.addEventListener('click', …)
 
     window.addEventListener('error', (e)=>{
       log('window error:', e.message);
