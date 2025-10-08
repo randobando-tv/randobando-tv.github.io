@@ -224,7 +224,7 @@
     });
 
     // CHANGE: unificar gesto do usuário no MOBILE/desktop ouvindo direto no CANVAS da cena
-    function handleUserTap(){
+    document.querySelector('a-scene').addEventListener('click', () => {
       if (!detected || playing || keepAlive) return;
       playing = true;
       playSequence(ANIM1, () => {
@@ -232,7 +232,7 @@
         playSequence(KEEP);
         buttons.setAttribute('visible', 'true');
       });
-    }
+    });
 
     // CHANGE: garantir que temos acesso ao canvas e registrar listeners de toque/clique
     const scene = document.querySelector('a-scene');
