@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
-  <title>RANDO_AR — MindAR com Botão de Início</title>
+  <title>RANDOlidade BANDOmentada</title>
 
   <!-- A-Frame -->
   <script src="https://aframe.io/releases/1.7.0/aframe.min.js"></script>
@@ -42,6 +42,26 @@
       display:none;
     }
     #startBtn:active{ transform:translateX(-50%) scale(.98); }
+
+          /* === Guia visual para alinhar o alvo (DOM overlay) === */
+    #guideTarget{
+      position:fixed;
+      left:50%;
+      top:50%;
+      transform:translate(-50%,-50%);
+      pointer-events:none;        /* não atrapalha toques */
+      opacity:.55;               /* ajuste a opacidade aqui (0.0 - 1.0) */
+      max-width:48vmin;          /* melhor ajuste entre desktop e mobile */
+      max-height:48vmin;
+      z-index:11;                /* acima da cena, abaixo do HUD */
+      display:none;              /* aparece via JS até o alvo ser detectado */
+      image-rendering: -webkit-optimize-contrast;
+      mix-blend-mode: normal;
+      filter: drop-shadow(0 6px 18px rgba(0,0,0,0.35));
+    }
+
+    /* === Esconder UI / overlay padrão do MindAR (remove 'scan' se existir) === */
+    .mindar-ui, .mindar-ui * { display: none !important; }
   </style>
 </head>
 <body>
@@ -51,6 +71,7 @@
   </div>
   <div id="panel" aria-hidden="true"></div>
   <button id="startBtn">▶ Iniciar animação</button>
+  <img id="guideTarget" src="assets/target.png" alt="guia para alinhar alvo">
 
   <a-scene
     mindar-image="imageTargetSrc: assets/target.mind; filterMinCF: 0.001; filterBeta: 0.02;"
@@ -117,6 +138,9 @@
       panel.setAttribute('aria-hidden', String(!on));
     });
     function addPanel(s){ panel.textContent += s + "\n"; }
+
+    // === CONFIGURAÇÕES ===
+    const SHOW_SCAN = false; // Altere para true se quiser ver o scan padrão do MindAR
 
     // ===== Sequências (vamos usar IDs dentro do <a-assets>) =====
     const ANIM1 = {
@@ -224,6 +248,8 @@
     }
 
     // Eventos MindAR
+    const guideTarget = document.getElementById('guideTarget');
+
     anchor.addEventListener('targetFound', () => {
       detected = true;
       statusEl.textContent = 'Alvo detectado — toque em "Iniciar animação".';
@@ -231,6 +257,9 @@
       buttons.setAttribute('visible', 'false');
       keepAlive = false; playing = false;
       startBtn.style.display = 'inline-block';  // mostra botão de início
+
+      // Esconder o guia DOM quando o alvo for encontrado
+      if (guideTarget) guideTarget.style.display = 'none';
     });
 
     anchor.addEventListener('targetLost', () => {
@@ -241,14 +270,29 @@
       startBtn.style.display = 'none';
       stopSequence();
       keepAlive = false; playing = false;
+
+      // Mostrar o guia DOM enquanto o alvo NÃO estiver detectado
+      if (guideTarget) guideTarget.style.display = 'block';
     });
+
 
     // Clique no botão (gesto explícito do usuário)
     startBtn.addEventListener('click', startAnimationFlow);
 
     // Fallback: tap no canvas também inicia
     const scene = document.querySelector('a-scene');
+
+      function toggleScanOverlay(show) {
+        const overlays = document.querySelectorAll('.mindar-ui, .mindar-ui-overlay, .mindar-ui-scanning');
+        overlays.forEach(el => {
+          el.style.display = show ? 'flex' : 'none';
+          el.style.visibility = show ? 'visible' : 'hidden';
+          el.style.opacity = show ? '1' : '0';
+        });
+}
+
     scene.addEventListener('loaded', () => {
+      toggleScanOverlay(SHOW_SCAN);
       const cv = scene.canvas;
       if (cv){
         ['pointerdown','touchstart','click'].forEach(ev=>{
@@ -257,6 +301,10 @@
         log('Tap handlers no canvas prontos (pointerdown/touchstart/click)');
       }
       statusEl.textContent = 'Aponte para o alvo';
+      if (guideTarget) {
+      // deixa visível por padrão até a primeira detecção
+      guideTarget.style.display = detected ? 'none' : 'block';
+    }
     });
 
     // Componentes de botão 3D
