@@ -63,6 +63,24 @@
     /* === Esconder UI / overlay padrão do MindAR (remove 'scan' se existir) === */
     .mindar-ui, .mindar-ui * { display: none !important; }
   </style>
+
+<style>
+#fallbackCta{
+  position:fixed;left:50%;bottom:64px;transform:translateX(-50%);
+  z-index:12;padding:12px 18px;border-radius:999px;
+  background:#111;color:#fff;border:1px solid rgba(255,255,255,.3);
+  font:600 16px/1.2 system-ui;opacity:.95;cursor:pointer;
+}
+#fallbackLayer{
+  position:fixed;inset:0;z-index:20;background:#000;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;
+}
+#fallbackFrame{max-width:min(90vw,520px);max-height:70vh;object-fit:contain}
+#fallbackActions{display:flex;flex-direction:column;gap:8px;align-items:center}
+#fallbackActions .links{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
+#fallbackBack{padding:8px 12px;border-radius:10px;border:1px solid #444;background:#111;color:#fff;cursor:pointer}
+</style>
+
 </head>
 <body>
   <div id="hud">
@@ -475,5 +493,107 @@
     // Log de erros
     window.addEventListener('error', (e)=>{ log('window error:', e.message); });
   </script>
+
+<button id="fallbackCta" style="display:none;">🎥 Ver animação sem AR</button>
+<div id="fallbackLayer" style="display:none;">
+  <img id="fallbackFrame" alt="animação 2D" />
+  <div id="fallbackActions">
+    <button id="fallbackBack">↩ Voltar para AR</button>
+    <div class="links">
+      <a href="https://randobando.tv/" target="_blank" rel="noopener">randobando.tv</a>
+      <a href="https://www.instagram.com/randobando.tv/" target="_blank" rel="noopener">instagram</a>
+      <a href="https://www.behance.net/randobando" target="_blank" rel="noopener">behance</a>
+    </div>
+  </div>
+</div>
+
+
+<script>
+const fallbackCta = document.getElementById('fallbackCta');
+const fallbackLayer = document.getElementById('fallbackLayer');
+const fallbackFrame = document.getElementById('fallbackFrame');
+const fallbackBack = document.getElementById('fallbackBack');
+
+let detectionTimer = null;
+const DETECTION_TIMEOUT_MS = 15000;
+
+function showFallbackCta(){
+  fallbackCta.style.display = 'inline-block';
+  statusEl.textContent = 'Não achou o alvo? Veja a animação sem AR.';
+}
+
+function hideFallbackCta(){
+  fallbackCta.style.display = 'none';
+}
+
+function startDetectionTimer(){
+  clearTimeout(detectionTimer);
+  detectionTimer = setTimeout(()=>{
+    if (!detected) showFallbackCta();
+  }, DETECTION_TIMEOUT_MS);
+}
+
+function stopDetectionTimer(){
+  clearTimeout(detectionTimer);
+  detectionTimer = null;
+}
+
+function setFallbackFrameById(assetId){
+  const el = document.getElementById(assetId);
+  if (el) fallbackFrame.src = el.src;
+}
+
+function playSequenceFallback(cfg, onEnd){
+  stopSequence();
+  currentCfg = cfg;
+  currentFrame = cfg.start;
+  const interval = 1000 / (cfg.fps || 10);
+
+  const step = () => {
+    const idx = currentFrame - cfg.start;
+    const assetId = cfg.ids[idx];
+    if (assetId){ setFallbackFrameById(assetId); }
+    currentFrame++;
+    if (currentFrame > cfg.end){
+      if (cfg.loop){ currentFrame = cfg.start; timerId = setTimeout(step, interval); }
+      else { stopSequence(); onEnd && onEnd(); }
+    } else {
+      timerId = setTimeout(step, interval);
+    }
+  };
+  step();
+}
+
+async function startFallback(){
+  await preloadSequence(ANIM1);
+  await preloadSequence(KEEP);
+  fallbackLayer.style.display = 'flex';
+  hideFallbackCta();
+  statusEl.textContent = 'Reproduzindo sem AR';
+  playSequenceFallback(ANIM1, ()=>{ playSequenceFallback(KEEP); });
+}
+
+function stopFallback(){
+  fallbackLayer.style.display = 'none';
+  stopSequence();
+  statusEl.textContent = detected ? 'Alvo detectado — toque em "Iniciar animação".' : 'Aponte para o alvo';
+}
+
+fallbackCta.addEventListener('click', startFallback);
+fallbackBack.addEventListener('click', stopFallback);
+
+scene.addEventListener('loaded', ()=>{ startDetectionTimer(); });
+
+anchor.addEventListener('targetFound', ()=>{ stopDetectionTimer(); hideFallbackCta(); });
+anchor.addEventListener('targetLost', ()=>{ startDetectionTimer(); });
+
+const sceneEl = document.querySelector('a-scene');
+sceneEl.addEventListener('arError', (e)=>{
+  log('arError', e.detail || '');
+  showFallbackCta();
+  statusEl.textContent = 'Não foi possível usar a câmera. Veja a versão sem AR.';
+});
+</script>
+
 </body>
 </html>
