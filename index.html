@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
-  <title>RANDOlidade BANDOmentada</title>
+  <title>RANDOlidade BANDOmentada — AR + HUD</title>
 
   <!-- A-Frame -->
   <script src="https://aframe.io/releases/1.7.0/aframe.min.js"></script>
@@ -14,7 +14,7 @@
     html,body{margin:0;height:100%;background:transparent;overflow:hidden;}
     a-scene, canvas { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
 
-    /* HUD / DEBUG */
+    /* HUD / DEBUG (seu painel) */
     #hud{
       position:fixed;left:0;top:0;right:0;padding:8px 12px;
       font:13px/1.35 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
@@ -27,12 +27,12 @@
       padding:4px 8px;border-radius:6px;cursor:pointer}
     #panel{
       position:fixed;left:8px;bottom:8px;right:8px;
-      background:rgba(0,0,0,.6);color:#fff;padding:8px;border-radius:8px;
+      background:rgba(0,0,0,.6);color:#0f0;padding:8px;border-radius:8px;
       font:12px/1.35 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-      display:none;max-height:35vh;overflow:auto;white-space:pre-wrap; z-index:10;
+      display:none;max-height:35vh;overflow:auto;white-space:pre-wrap; z-index:50;
     }
 
-    /* Botão de início (overlay DOM) */
+    /* Botão de início (overlay DOM) — fluxo AR */
     #startBtn{
       position:fixed;left:50%;bottom:14px;transform:translateX(-50%);
       z-index:12; pointer-events:auto;
@@ -43,44 +43,46 @@
     }
     #startBtn:active{ transform:translateX(-50%) scale(.98); }
 
-          /* === Guia visual para alinhar o alvo (DOM overlay) === */
+    /* Guia DOM do target */
     #guideTarget{
-      position:fixed;
-      left:50%;
-      top:50%;
-      transform:translate(-50%,-50%);
-      pointer-events:none;        /* não atrapalha toques */
-      opacity:.55;               /* ajuste a opacidade aqui (0.0 - 1.0) */
-      max-width:48vmin;          /* melhor ajuste entre desktop e mobile */
-      max-height:48vmin;
-      z-index:11;                /* acima da cena, abaixo do HUD */
-      display:none;              /* aparece via JS até o alvo ser detectado */
-      image-rendering: -webkit-optimize-contrast;
-      mix-blend-mode: normal;
-      filter: drop-shadow(0 6px 18px rgba(0,0,0,0.35));
+      position:fixed; left:50%; top:50%; transform:translate(-50%,-50%);
+      pointer-events:none; opacity:.45; max-width:48vmin; max-height:48vmin;
+      z-index:11; display:none; filter: drop-shadow(0 6px 18px rgba(0,0,0,0.35));
     }
 
-    /* === Esconder UI / overlay padrão do MindAR (remove 'scan' se existir) === */
+    /* Esconde UI padrão MindAR */
     .mindar-ui, .mindar-ui * { display: none !important; }
+
+    /* === HUD FIXO (fallback sem AR) === */
+    #hudFallback{
+      position:fixed; inset:0; display:none; align-items:center; justify-content:center;
+      z-index:40; pointer-events:none; /* reabriremos em filhos necessários */
+    }
+    #hudBox{
+      position:relative; pointer-events:auto;
+      background:rgba(0,0,0,.25); border:1px solid rgba(255,255,255,.25);
+      border-radius:16px; padding:16px; box-shadow:0 10px 30px rgba(0,0,0,.35);
+      display:flex; flex-direction:column; gap:12px; align-items:center; justify-content:center;
+      transform: translateZ(0);
+    }
+    /* Teaser / anima 2D no HUD */
+    #hudAnim{
+      width:min(360px, 70vw);
+      height:auto; image-rendering: -webkit-optimize-contrast;
+      display:block; transform: translateZ(0);
+    }
+    #hudCTA{
+      margin-top:4px;
+      border-radius:999px; padding:10px 16px; font:600 16px/1.2 system-ui, sans-serif;
+      background:#fff; color:#000; border:1px solid rgba(0,0,0,.2);
+      box-shadow:0 6px 20px rgba(0,0,0,.2); cursor:pointer;
+    }
+    #hudLinks{ display:none; gap:10px; flex-wrap:wrap; justify-content:center; }
+    #hudLinks a{
+      text-decoration:none;border:1px solid #444;border-radius:12px;padding:10px 14px;
+      background:rgba(0,0,0,.65);color:#fff;font:600 14px/1 system-ui;
+    }
   </style>
-
-<style>
-#fallbackCta{
-  position:fixed;left:50%;bottom:64px;transform:translateX(-50%);
-  z-index:12;padding:12px 18px;border-radius:999px;
-  background:#111;color:#fff;border:1px solid rgba(255,255,255,.3);
-  font:600 16px/1.2 system-ui;opacity:.95;cursor:pointer;
-}
-#fallbackLayer{
-  position:fixed;inset:0;z-index:20;background:#000;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;
-}
-#fallbackFrame{max-width:min(90vw,520px);max-height:70vh;object-fit:contain}
-#fallbackActions{display:flex;flex-direction:column;gap:8px;align-items:center}
-#fallbackActions .links{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
-#fallbackBack{padding:8px 12px;border-radius:10px;border:1px solid #444;background:#111;color:#fff;cursor:pointer}
-</style>
-
 </head>
 <body>
   <div id="hud">
@@ -88,9 +90,25 @@
     <button id="debug" aria-pressed="false">Debug</button>
   </div>
   <div id="panel" aria-hidden="true"></div>
+
   <button id="startBtn">▶ Iniciar animação</button>
   <img id="guideTarget" src="assets/target.png" alt="guia para alinhar alvo">
 
+  <!-- ===== HUD FIXO (sem AR) ===== -->
+  <div id="hudFallback" aria-hidden="true">
+    <div id="hudBox">
+      <!-- sprite do botão/teaser (menor e central) -->
+      <img id="hudAnim" alt="teaser/anim sem AR" />
+      <button id="hudCTA">Ver animação sem AR</button>
+      <div id="hudLinks">
+        <a href="https://randobando.tv/" target="_blank" rel="noopener">randobando.tv</a>
+        <a href="https://www.instagram.com/randobando.tv/" target="_blank" rel="noopener">instagram</a>
+        <a href="https://www.behance.net/randobando" target="_blank" rel="noopener">behance</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Cena AR ===== -->
   <a-scene
     mindar-image="imageTargetSrc: assets/target.mind; filterMinCF: 0.001; filterBeta: 0.02;"
     vr-mode-ui="enabled: false"
@@ -99,18 +117,16 @@
     device-orientation-permission-ui="enabled: true">
 
     <a-assets id="assets" timeout="20000">
-      <!-- Primeiro frame: deixa algo pronto na tela enquanto pré-carrega -->
       <img id="firstFrame" src="assets/Anim1/anim1_0001.png" crossorigin="anonymous"/>
     </a-assets>
 
-    <a-camera position="0 0 0"
+    <a-camera id="mainCam" position="0 0 0"
               look-controls="enabled: false"
               cursor="rayOrigin: mouse; fuse: false"
               raycaster="objects: .btn; far: 20;"></a-camera>
 
     <a-entity mindar-image-target="targetIndex: 0" id="anchor">
-      <!-- a-image é conveniente; vamos trocar material.src por IDs de assets -->
-      <!-- IMPORTANTE: class="clickthrough" remove este elemento da detecção do raycaster -->
+      <!-- Sprite AR (sequência) -->
       <a-image id="sprite"
                src="#firstFrame"
                position="0 0 0"
@@ -120,33 +136,40 @@
                class="clickthrough">
       </a-image>
 
-      <!-- Botões com position Z maior (0.1) para ficarem na frente do sprite (0) -->
-      <a-entity id="buttons" visible="false" position="0 0.05 0.1" rotation="0 0 0">
-        <!-- BOTÕES ORIGINAIS -->
-        <a-plane id="btn-original-1" class="btn" position="0.6 0.2 0.1" width="0.4" height="0.15" color="#222" opacity="0.9"
+      <!-- Botão animado AR (paralelo) -->
+      <a-image id="buttonSprite"
+               position="0 0 0.24"
+               width="1.2" height="1.2"
+               visible="false"
+               material="transparent: true; alphaTest: 0.01; side: double;">
+      </a-image>
+
+      <!-- Botões AR -->
+      <a-entity id="buttons" visible="false" position="0 -0.1 0.25" rotation="0 0 0">
+        <a-plane id="btn-original-1" class="btn" position="-0.29 0.13 0" width="0.24" height="0.14" color="#222" opacity="0.9"
                  hover-color="over:#444; out:#222"
                  click-open-url="url:https://randobando.tv/">
-          <a-text value="randobando.tv" align="center" width="1.2" position="0 0 0.01"></a-text>
+          <a-text value=".tv" align="center" width="1.2" position="0 0 0.01"></a-text>
         </a-plane>
 
-        <a-plane id="btn-original-2" class="btn" position="0.505 0 0.1" width="0.4" height="0.15" color="#222" opacity="0.9"
+        <a-plane id="btn-original-2" class="btn" position="0.315 0.01 0.0" width="0.14" height="0.14" color="#222" opacity="0.9"
                  hover-color="over:#444; out:#222"
                  click-open-url="url:https://www.instagram.com/randobando.tv/">
-          <a-text value="instagram" align="center" width="1.2" position="0 0 0.01"></a-text>
+          <a-text value="inst" align="center" width="1.2" position="0 0 0.01"></a-text>
         </a-plane>
 
-        <a-plane id="btn-original-3" class="btn" position="0.55 -0.2 0.1" width="0.4" height="0.15" color="#222" opacity="0.9"
+        <a-plane id="btn-original-3" class="btn" position="0.315 -0.15 0.0" width="0.14" height="0.14" color="#222" opacity="0.9"
                  hover-color="over:#444; out:#222"
                  click-open-url="url:https://www.behance.net/randobando">
-          <a-text value="behance" align="center" width="1.2" position="0 0 0.01"></a-text>
+          <a-text value="beh" align="center" width="1.2" position="0 0 0.01"></a-text>
         </a-plane>
       </a-entity>
     </a-entity>
   </a-scene>
 
   <script>
-    // ===== Helpers de UI/Debug =====
-    const log = (...args)=>{ console.log(...args); addPanel(args.map(String).join(' ')); }
+    // ========= Helpers UI/Debug =========
+    const log = (...args)=>{ console.log(...args); addPanel(args.map(x=>typeof x==='object'?JSON.stringify(x):String(x)).join(' ')); }
     const panel = document.getElementById('panel');
     const statusEl = document.getElementById('status');
     document.getElementById('debug').addEventListener('click', (e)=>{
@@ -155,32 +178,44 @@
       e.currentTarget.setAttribute('aria-pressed', String(on));
       panel.setAttribute('aria-hidden', String(!on));
     });
-    function addPanel(s){ panel.textContent += s + "\n"; }
+    function addPanel(s){ panel.textContent += s + "\n"; panel.scrollTop = panel.scrollHeight; }
 
-    // === CONFIGURAÇÕES ===
-    const SHOW_SCAN = false; // Altere para true se quiser ver o scan padrão do MindAR
+    // ========= Configs =========
+    const SHOW_SCAN = false;              // esconder UI padrão do MindAR
+    const LOST_TIMEOUT_MS = 5000;         // 5s para mostrar HUD se alvo some
 
-    // ===== Sequências (vamos usar IDs dentro do <a-assets>) =====
-    const ANIM1 = {
-      name: 'anim1', folder: 'assets/Anim1',
-      pattern: i => `anim1_${String(i).padStart(4,'0')}.png`,
-      start: 1, end: 6, fps: 3, ids: []
-    };
-    const KEEP = {
-      name: 'keep', folder: 'assets/Keepalive',
-      pattern: i => `keep_${String(i).padStart(4,'0')}.png`,
-      start: 1, end: 6, fps: 3, loop: true, ids: []
-    };
+    // ========= Sequências =========
+    const ANIM1 = { name: 'anim1', folder: 'assets/Anim1', pattern: i => `anim1_${String(i).padStart(4,'0')}.png`, start: 1, end: 6, fps: 3, ids: [] };
+    const KEEP  = { name: 'keep',  folder: 'assets/Keepalive', pattern: i => `keep_${String(i).padStart(4,'0')}.png`,  start: 1, end: 6, fps: 3, loop: true, ids: [] };
+    const BUTTON_ANIM = { name: 'button', folder: 'assets/Button', pattern: i => `but_${String(i).padStart(4,'0')}.png`, start: 1, end: 6, fps: 3, loop: false, ids: [] };
 
+    // ========= Refs =========
     const assetsEl = document.getElementById('assets');
     const sprite = document.getElementById('sprite');
+    const buttonSprite = document.getElementById('buttonSprite');
     const buttons = document.getElementById('buttons');
     const startBtn = document.getElementById('startBtn');
     const anchor = document.getElementById('anchor');
+    const guideTarget = document.getElementById('guideTarget');
 
-    let detected = false, playing = false, keepAlive = false;
+    // HUD fixo (fallback sem AR)
+    const hudWrap = document.getElementById('hudFallback');
+    const hudAnim = document.getElementById('hudAnim');
+    const hudCTA = document.getElementById('hudCTA');
+    const hudLinks = document.getElementById('hudLinks');
+
+    // ========= Estados =========
+    let detected = false;
+    let playing = false;     // AR: ANIM1 tocando
+    let keepAlive = false;   // AR: KEEP loop
     let timerId = null, currentFrame = 1, currentCfg = null;
 
+    // Fallback timers (HUD)
+    let hudTimer = null;          // espera 5s antes de mostrar HUD
+    let hudAnimTimer = null;      // timer da sequência no HUD
+    let hudKeepLoop = false;      // se true, loopa KEEP no HUD
+
+    // ========= Utilidades =========
     function ensureAssetImg(id, src){
       let el = document.getElementById(id);
       if (!el){
@@ -216,9 +251,14 @@
 
     function setSpriteById(assetId){
       const ref = `#${assetId}`;
-      // definir nos dois lugares para forçar atualização do material
       sprite.setAttribute('src', ref);
       sprite.setAttribute('material', 'src', ref);
+    }
+
+    function setAImageSprite(el, assetId){
+      const ref = `#${assetId}`;
+      el.setAttribute('src', ref);
+      el.setAttribute('material', 'src', ref);
     }
 
     function stopSequence(){
@@ -232,7 +272,7 @@
       const interval = 1000 / (cfg.fps || 10);
 
       const step = () => {
-        const idx = currentFrame - cfg.start;               // 0-based
+        const idx = currentFrame - cfg.start;
         const assetId = cfg.ids[idx];
         if (assetId){ setSpriteById(assetId); }
         currentFrame++;
@@ -246,91 +286,198 @@
       step();
     }
 
-    async function startAnimationFlow(){
+    // ========= Overlay HUD (fallback) =========
+    function stopHudAnim(){
+      if (hudAnimTimer){ clearTimeout(hudAnimTimer); hudAnimTimer = null; }
+      hudKeepLoop = false;
+      hudLinks.style.display = 'none';
+    }
+    function hideHUD(){
+      stopHudAnim();
+      hudWrap.style.display = 'none';
+      hudWrap.setAttribute('aria-hidden','true');
+    }
+    function showHUD(){
+      hudWrap.style.display = 'flex';
+      hudWrap.setAttribute('aria-hidden','false');
+    }
+    function setHudImage(assetId){
+      const el = document.getElementById(assetId);
+      if (el) hudAnim.src = el.src;
+    }
+
+    function playHudSequence(cfg, onEnd){
+      stopHudAnim();
+      let frame = cfg.start;
+      const interval = 1000 / (cfg.fps || 10);
+      const step = ()=>{
+        const idx = frame - cfg.start;
+        const assetId = cfg.ids[idx];
+        if (assetId){ setHudImage(assetId); }
+        frame++;
+        if (frame > cfg.end){
+          if (cfg.loop){
+            frame = cfg.start;
+            hudAnimTimer = setTimeout(step, interval);
+          } else {
+            stopHudAnim();
+            onEnd && onEnd();
+          }
+        } else {
+          hudAnimTimer = setTimeout(step, interval);
+        }
+      };
+      step();
+    }
+
+    async function startHudFlow(){
+      // roda Anim1 menor no centro (HUD), depois loop do KEEP + links
+      hideHUD(); // evita flicker
+      await preloadSequence(ANIM1);
+      await preloadSequence(KEEP);
+
+      showHUD();
+      hudLinks.style.display = 'none';
+      playHudSequence(ANIM1, ()=>{
+        hudKeepLoop = true;
+        playHudSequence(KEEP);
+        hudLinks.style.display = 'flex';
+      });
+    }
+
+    function cancelHudTimer(){
+      if (hudTimer){ clearTimeout(hudTimer); hudTimer = null; }
+    }
+    function scheduleHud(){
+      cancelHudTimer();
+      hudTimer = setTimeout(()=>{
+        if (!detected){
+          // Teaser: mostramos um frame do BUTTON e o CTA
+          preloadSequence(BUTTON_ANIM).then(()=>{
+            const id = BUTTON_ANIM.ids[0] || null;
+            if (id) setHudImage(id);
+            hudLinks.style.display = 'none';
+            showHUD();
+            log('HUD visível após timeout');
+          });
+        }
+      }, LOST_TIMEOUT_MS);
+    }
+
+    // ========= Fluxo AR =========
+    async function startARFlow(){
       if (!detected || playing || keepAlive) return;
       playing = true;
       startBtn.style.display = 'none';
 
-      // garante assets carregados
       await preloadSequence(ANIM1);
       await preloadSequence(KEEP);
+      await preloadSequence(BUTTON_ANIM);
 
-      sprite.setAttribute('visible', 'true');
+      sprite.setAttribute('visible','true');
+      buttonSprite.setAttribute('visible','true');
 
-      playSequence(ANIM1, () => {
+      // ANIM1 → KEEP + botões
+      playSequence(ANIM1, ()=>{
         keepAlive = true; playing = false;
         playSequence(KEEP);
-        buttons.setAttribute('visible', 'true');
-        log('Botões agora visíveis!');
+        buttons.setAttribute('visible','true');
+        log('Botões agora visíveis! [AR]');
       });
+
+      // botão paralelo (AR)
+      let frame = BUTTON_ANIM.start;
+      const interval = 1000/(BUTTON_ANIM.fps||10);
+      const runBtn = ()=>{
+        const idx = frame - BUTTON_ANIM.start;
+        const assetId = BUTTON_ANIM.ids[idx];
+        if (assetId) setAImageSprite(buttonSprite, assetId);
+        frame++;
+        if (frame > BUTTON_ANIM.end){
+          // mantém último frame visível (não-loop)
+        } else {
+          setTimeout(runBtn, interval);
+        }
+      };
+      runBtn();
     }
 
-    // Eventos MindAR
-    const guideTarget = document.getElementById('guideTarget');
-
-    anchor.addEventListener('targetFound', () => {
+    // ========= Eventos MindAR =========
+    anchor.addEventListener('targetFound', ()=>{
+        cancelHudTimer();
+        hideHUD();
       detected = true;
       statusEl.textContent = 'Alvo detectado — toque em "Iniciar animação".';
-      sprite.setAttribute('visible', 'true');   // mostra o primeiro frame
-      buttons.setAttribute('visible', 'false');
-      keepAlive = false; playing = false;
-      startBtn.style.display = 'inline-block';  // mostra botão de início
 
-      // Esconder o guia DOM quando o alvo for encontrado
+      // AR UI inicial
+      sprite.setAttribute('visible','true');
+      setSpriteById(ANIM1.ids[0] || 'firstFrame');  // assegura 1º frame
+      buttons.setAttribute('visible','false');
+      buttonSprite.setAttribute('visible','false');
+      keepAlive = false; playing = false;
+
+      // HUD off
+      hideHUD(); cancelHudTimer();
+
+      // mostra botão de início
+      startBtn.style.display = 'inline-block';
+
+      // guia off
       if (guideTarget) guideTarget.style.display = 'none';
     });
 
-    anchor.addEventListener('targetLost', () => {
+    anchor.addEventListener('targetLost', ()=>{
       detected = false;
       statusEl.textContent = 'Procurando alvo...';
-      sprite.setAttribute('visible', 'false');
-      buttons.setAttribute('visible', 'false');
+
+      // AR off
+      sprite.setAttribute('visible','false');
+      buttons.setAttribute('visible','false');
+      buttonSprite.setAttribute('visible','false');
       startBtn.style.display = 'none';
       stopSequence();
       keepAlive = false; playing = false;
 
-      // Mostrar o guia DOM enquanto o alvo NÃO estiver detectado
+      // agenda HUD (5s)
+      scheduleHud();
+
+      // guia on
       if (guideTarget) guideTarget.style.display = 'block';
     });
 
+    // ========= UI handlers =========
+    startBtn.addEventListener('click', startARFlow);
+    hudCTA.addEventListener('click', startHudFlow);
 
-    // Clique no botão (gesto explícito do usuário)
-    startBtn.addEventListener('click', startAnimationFlow);
+    // ========= Carregamento cena =========
+    function toggleScanOverlay(show) {
+      const overlays = document.querySelectorAll('.mindar-ui, .mindar-ui-overlay, .mindar-ui-scanning');
+      overlays.forEach(el => {
+        el.style.display = show ? 'flex' : 'none';
+        el.style.visibility = show ? 'visible' : 'hidden';
+        el.style.opacity = show ? '1' : '0';
+      });
+    }
 
-    // Fallback: tap no canvas também inicia
     const scene = document.querySelector('a-scene');
-
-      function toggleScanOverlay(show) {
-        const overlays = document.querySelectorAll('.mindar-ui, .mindar-ui-overlay, .mindar-ui-scanning');
-        overlays.forEach(el => {
-          el.style.display = show ? 'flex' : 'none';
-          el.style.visibility = show ? 'visible' : 'hidden';
-          el.style.opacity = show ? '1' : '0';
-        });
-}
-
-    scene.addEventListener('loaded', () => {
+    scene.addEventListener('loaded', ()=>{
+      if (!detected) scheduleHud();
       toggleScanOverlay(SHOW_SCAN);
       const cv = scene.canvas;
       if (cv){
         ['pointerdown','touchstart','click'].forEach(ev=>{
-          cv.addEventListener(ev, () => startAnimationFlow(), {passive:true});
+          cv.addEventListener(ev, ()=> startARFlow(), {passive:true});
         });
         log('Tap handlers no canvas prontos (pointerdown/touchstart/click)');
       }
       statusEl.textContent = 'Aponte para o alvo';
-      if (guideTarget) {
-      // deixa visível por padrão até a primeira detecção
-      guideTarget.style.display = detected ? 'none' : 'block';
-    }
+      if (guideTarget) guideTarget.style.display = detected ? 'none' : 'block';
     });
 
-    // Componentes de botão 3D
+    // ========= Componentes (mantidos) =========
     AFRAME.registerComponent('click-open-url', {
       schema: { url: {type: 'string'} },
-      init(){
-        log(`[click-open-url] Componente inicializado para URL: ${this.data.url}`);
-      }
+      init(){ log(`[click-open-url] init: ${this.data.url}`); }
     });
 
     AFRAME.registerComponent('hover-color', {
@@ -347,253 +494,75 @@
       }
     });
 
-    // ===== SISTEMA DE DETECÇÃO MANUAL DE CLIQUES =====
-    // Como o raycaster do A-Frame não está funcionando com MindAR, vamos usar Three.js diretamente
-    
+    // ========= Manual Click (mantido p/ botões AR) =========
     let manualRaycaster = null;
     let mouse = new THREE.Vector2();
-    
     function setupManualClickDetection() {
-      const scene = document.querySelector('a-scene');
-      if (!scene || !scene.hasLoaded) {
-        setTimeout(setupManualClickDetection, 500);
-        return;
-      }
-      
-      const sceneEl = scene;
+      const sceneEl = document.querySelector('a-scene');
+      if (!sceneEl || !sceneEl.hasLoaded){ setTimeout(setupManualClickDetection, 500); return; }
+
       const camera = sceneEl.camera;
       const canvas = sceneEl.canvas;
-      
-      if (!camera || !canvas) {
-        log('[Manual Click] Câmera ou canvas não encontrados, tentando novamente...');
-        setTimeout(setupManualClickDetection, 500);
-        return;
-      }
-      
+      if (!camera || !canvas){ log('[Manual Click] aguardando camera/canvas...'); setTimeout(setupManualClickDetection, 500); return; }
+
       manualRaycaster = new THREE.Raycaster();
-      log('[Manual Click] Sistema de detecção manual inicializado');
-      
-      // Função para processar clique/toque
+      log('[Manual Click] ready');
+
       function handleInteraction(event) {
-        // Obter coordenadas normalizadas do clique/toque
         let clientX, clientY;
         if (event.touches && event.touches.length > 0) {
-          clientX = event.touches[0].clientX;
-          clientY = event.touches[0].clientY;
+          clientX = event.touches[0].clientX; clientY = event.touches[0].clientY;
         } else if (event.changedTouches && event.changedTouches.length > 0) {
-          clientX = event.changedTouches[0].clientX;
-          clientY = event.changedTouches[0].clientY;
-        } else {
-          clientX = event.clientX;
-          clientY = event.clientY;
-        }
-        
+          clientX = event.changedTouches[0].clientX; clientY = event.changedTouches[0].clientY;
+        } else { clientX = event.clientX; clientY = event.clientY; }
+
         const rect = canvas.getBoundingClientRect();
         mouse.x = ((clientX - rect.left) / rect.width) * 2 - 1;
         mouse.y = -((clientY - rect.top) / rect.height) * 2 + 1;
-        
-        // Configurar raycaster
+
         manualRaycaster.setFromCamera(mouse, camera);
-        
-        // Obter todos os objetos 3D dos botões
-        const buttonElements = document.querySelectorAll('.btn');
-        const buttonMeshes = [];
-        
-        buttonElements.forEach(btnEl => {
-          const mesh = btnEl.getObject3D('mesh');
-          if (mesh && btnEl.getAttribute('visible') !== 'false') {
-            mesh.userData.element = btnEl;
-            buttonMeshes.push(mesh);
-          }
+        const btnEls = document.querySelectorAll('.btn');
+        const meshes = [];
+        btnEls.forEach(el=>{
+          const mesh = el.getObject3D('mesh');
+          if (mesh && el.getAttribute('visible') !== 'false'){ mesh.userData.element = el; meshes.push(mesh); }
         });
-        
-        // Verificar intersecções
-        const intersects = manualRaycaster.intersectObjects(buttonMeshes, true);
-        
-        if (intersects.length > 0) {
-          // Encontrar o elemento A-Frame correspondente
-          let targetEl = null;
-          let currentObj = intersects[0].object;
-          
-          while (currentObj && !targetEl) {
-            if (currentObj.el && currentObj.el.classList.contains('btn')) {
-              targetEl = currentObj.el;
-              break;
-            }
-            if (currentObj.userData && currentObj.userData.element) {
-              targetEl = currentObj.userData.element;
-              break;
-            }
-            currentObj = currentObj.parent;
+        const intersects = manualRaycaster.intersectObjects(meshes, true);
+        if (intersects.length>0){
+          let targetEl=null; let obj=intersects[0].object;
+          while (obj && !targetEl){
+            if (obj.el && obj.el.classList && obj.el.classList.contains('btn')) targetEl=obj.el;
+            else if (obj.userData && obj.userData.element) targetEl=obj.userData.element;
+            obj=obj.parent;
           }
-          
-          if (targetEl) {
-            log(`[Manual Click] Botão clicado: ${targetEl.id || 'sem ID'}`);
-            
-            // Tentar obter URL do componente A-Frame
-            let url = null;
-            if (targetEl.components['click-open-url']) {
-              url = targetEl.components['click-open-url'].data.url;
-            }
-            
-            if (url) {
-              log(`[Manual Click] Abrindo URL: ${url}`);
-              
-              // Tentar abrir o link
-              try {
-                const newWindow = window.open(url, '_blank', 'noopener,noreferrer');
-                if (newWindow) {
-                  newWindow.opener = null;
-                  log(`[Manual Click] Link aberto com sucesso!`);
-                } else {
-                  log(`[Manual Click] window.open bloqueado, tentando método alternativo...`);
-                  // Método alternativo: criar elemento <a> e simular clique
-                  const a = document.createElement('a');
-                  a.href = url;
-                  a.target = '_blank';
-                  a.rel = 'noopener noreferrer';
-                  a.style.display = 'none';
+          if (targetEl){
+            let url=null;
+            if (targetEl.components['click-open-url']) url = targetEl.components['click-open-url'].data.url;
+            if (url){
+              try{
+                const w=window.open(url,'_blank','noopener,noreferrer');
+                if (w) w.opener=null; else {
+                  const a=document.createElement('a');
+                  a.href=url;a.target='_blank';a.rel='noopener noreferrer';a.style.display='none';
                   document.body.appendChild(a);
-                  
-                  const clickEvent = new MouseEvent('click', {
-                    view: window,
-                    bubbles: true,
-                    cancelable: true
-                  });
-                  a.dispatchEvent(clickEvent);
-                  
-                  setTimeout(() => a.remove(), 100);
-                  log(`[Manual Click] Método alternativo executado`);
+                  a.click(); setTimeout(()=>a.remove(),50);
                 }
-              } catch (err) {
-                log(`[Manual Click] Erro: ${err.message}`);
-              }
+              }catch(err){ log('[Manual Click] erro:', err.message); }
             }
           }
         }
       }
-      
-      // Adicionar listeners
       canvas.addEventListener('click', handleInteraction);
       canvas.addEventListener('touchend', handleInteraction);
-      
-      log('[Manual Click] Listeners adicionados ao canvas');
     }
-    
-    // Iniciar após a cena carregar
-    document.addEventListener('DOMContentLoaded', () => {
-      const scene = document.querySelector('a-scene');
-      if (scene.hasLoaded) {
-        setupManualClickDetection();
-      } else {
-        scene.addEventListener('loaded', setupManualClickDetection);
-      }
+    document.addEventListener('DOMContentLoaded', ()=>{
+      const sc = document.querySelector('a-scene');
+      if (sc.hasLoaded) setupManualClickDetection();
+      else sc.addEventListener('loaded', setupManualClickDetection);
     });
 
-    // Log de erros
+    // Erros globais
     window.addEventListener('error', (e)=>{ log('window error:', e.message); });
   </script>
-
-<button id="fallbackCta" style="display:none;">🎥 Ver animação sem AR</button>
-<div id="fallbackLayer" style="display:none;">
-  <img id="fallbackFrame" alt="animação 2D" />
-  <div id="fallbackActions">
-    <button id="fallbackBack">↩ Voltar para AR</button>
-    <div class="links">
-      <a href="https://randobando.tv/" target="_blank" rel="noopener">randobando.tv</a>
-      <a href="https://www.instagram.com/randobando.tv/" target="_blank" rel="noopener">instagram</a>
-      <a href="https://www.behance.net/randobando" target="_blank" rel="noopener">behance</a>
-    </div>
-  </div>
-</div>
-
-
-<script>
-const fallbackCta = document.getElementById('fallbackCta');
-const fallbackLayer = document.getElementById('fallbackLayer');
-const fallbackFrame = document.getElementById('fallbackFrame');
-const fallbackBack = document.getElementById('fallbackBack');
-
-let detectionTimer = null;
-const DETECTION_TIMEOUT_MS = 15000;
-
-function showFallbackCta(){
-  fallbackCta.style.display = 'inline-block';
-  statusEl.textContent = 'Não achou o alvo? Veja a animação sem AR.';
-}
-
-function hideFallbackCta(){
-  fallbackCta.style.display = 'none';
-}
-
-function startDetectionTimer(){
-  clearTimeout(detectionTimer);
-  detectionTimer = setTimeout(()=>{
-    if (!detected) showFallbackCta();
-  }, DETECTION_TIMEOUT_MS);
-}
-
-function stopDetectionTimer(){
-  clearTimeout(detectionTimer);
-  detectionTimer = null;
-}
-
-function setFallbackFrameById(assetId){
-  const el = document.getElementById(assetId);
-  if (el) fallbackFrame.src = el.src;
-}
-
-function playSequenceFallback(cfg, onEnd){
-  stopSequence();
-  currentCfg = cfg;
-  currentFrame = cfg.start;
-  const interval = 1000 / (cfg.fps || 10);
-
-  const step = () => {
-    const idx = currentFrame - cfg.start;
-    const assetId = cfg.ids[idx];
-    if (assetId){ setFallbackFrameById(assetId); }
-    currentFrame++;
-    if (currentFrame > cfg.end){
-      if (cfg.loop){ currentFrame = cfg.start; timerId = setTimeout(step, interval); }
-      else { stopSequence(); onEnd && onEnd(); }
-    } else {
-      timerId = setTimeout(step, interval);
-    }
-  };
-  step();
-}
-
-async function startFallback(){
-  await preloadSequence(ANIM1);
-  await preloadSequence(KEEP);
-  fallbackLayer.style.display = 'flex';
-  hideFallbackCta();
-  statusEl.textContent = 'Reproduzindo sem AR';
-  playSequenceFallback(ANIM1, ()=>{ playSequenceFallback(KEEP); });
-}
-
-function stopFallback(){
-  fallbackLayer.style.display = 'none';
-  stopSequence();
-  statusEl.textContent = detected ? 'Alvo detectado — toque em "Iniciar animação".' : 'Aponte para o alvo';
-}
-
-fallbackCta.addEventListener('click', startFallback);
-fallbackBack.addEventListener('click', stopFallback);
-
-scene.addEventListener('loaded', ()=>{ startDetectionTimer(); });
-
-anchor.addEventListener('targetFound', ()=>{ stopDetectionTimer(); hideFallbackCta(); });
-anchor.addEventListener('targetLost', ()=>{ startDetectionTimer(); });
-
-const sceneEl = document.querySelector('a-scene');
-sceneEl.addEventListener('arError', (e)=>{
-  log('arError', e.detail || '');
-  showFallbackCta();
-  statusEl.textContent = 'Não foi possível usar a câmera. Veja a versão sem AR.';
-});
-</script>
-
 </body>
 </html>
