@@ -43,7 +43,6 @@
   <button id="startBtn" class="cta">▶ Iniciar animação</button>
   <button id="startFallback" class="cta">Ativar animação sem alvo</button>
   <button id="backFreeBtn" class="cta">⟲ Voltar</button>
-  <!-- voltar para ARmode -->
   <button id="backArBtn" class="cta">⟲ Voltar</button>
 
   <!-- ===== Cena AR ===== -->
@@ -72,6 +71,7 @@
                width="1.2" height="1.2"
                visible="false"></a-image>
 
+      <!-- Fade controlado apenas via JS -->
       <a-image id="buttonSpriteAR"
                position="0 0 0.24"
                width="1.2" height="1.2"
@@ -79,7 +79,7 @@
                material="transparent: true; alphaTest: 0.01; side: double;"></a-image>
 
       <a-entity id="buttonsAR" visible="false" position="0 -0.1 0.25" rotation="0 0 0">
-        <!-- Planos com material invisível por padrão; visibilidade controlada via CONFIG.BUTTONS_VISIBILITY.ar -->
+        <!-- Hitboxes invisíveis; não alteramos opacidade por fade -->
         <a-plane class="btn" position="-0.29 0.13 0" width="0.24" height="0.14"
                  material="color:#fff; transparent:true; opacity:0; side:double; depthTest:false; depthWrite:false"
                  click-open-url="url:https://randobando.tv/">
@@ -121,6 +121,7 @@
                width="1.2" height="1.2"
                visible="false"></a-image>
 
+      <!-- Fade controlado apenas via JS -->
       <a-image id="buttonSpriteFree"
                position="0 0 0.24"
                width="1.2" height="1.2"
@@ -173,6 +174,14 @@
       BUTTONS_VISIBILITY: {
         ar:   { planes: false, texts: false },
         free: { planes: false, texts: false }
+      },
+      // ======= CONTROLES DE FADE (apenas no sprite PNG dos botões) =======
+      FADES_BUTTON_SPRITE: {
+        enabled: true,
+        inMs: 180,
+        outMs: 180,
+        targetOpacity: 1.0,
+        startOpacity: 0.0
       }
     });
 
@@ -206,7 +215,7 @@
       const ts = new Date().toISOString().split('T')[1].replace('Z','');
       const line = `[${ts}] ` + args.map(x=>typeof x==='object'?JSON.stringify(x):String(x)).join(' ');
       console.log('[DBG]', ...args);
-      panel.textContent += line + "\\n";
+      panel.textContent += line + "\n";
       panel.scrollTop = panel.scrollHeight;
     };
     $('#debug').addEventListener('click', (e)=>{
@@ -384,9 +393,10 @@
       FREE.buttons.setAttribute('rotation', `${bg.rotationEulerDeg.x} ${bg.rotationEulerDeg.y} ${bg.rotationEulerDeg.z}`);
     }
 
+    /* ===== Helpers para planos clicáveis (sem fade) ===== */
     function setButtonPlaneMaterial(planeEl, showPlane){
       const mat = showPlane
-        ? 'color:#222; transparent:true; opacity:0.8; side:double; depthTest:false; depthWrite:false'
+        ? 'color:#fff; transparent:true; opacity:0; side:double; depthTest:false; depthWrite:false'
         : 'color:#fff; transparent:true; opacity:0; side:double; depthTest:false; depthWrite:false';
       planeEl.setAttribute('material', mat);
       const mesh = planeEl.getObject3D('mesh');
@@ -399,53 +409,92 @@
       groupEl.querySelectorAll('a-text').forEach(t => t.setAttribute('visible', !!cfg.texts));
     }
 
+    /* ======== FADES (apenas no SPRITE PNG de botões) ======== */
+    function getMat(el){
+      const mesh = el?.getObject3D?.('mesh');
+      return mesh && mesh.material ? mesh.material : null;
+    }
+    function setOpacity(el, v){
+      const m = getMat(el); if (!m) return;
+      m.transparent = true; m.opacity = Math.max(0, Math.min(1, v)); m.needsUpdate = true;
+    }
+    function fadeTo(el, to, ms){
+      if (!CONFIG.FADES_BUTTON_SPRITE.enabled) { setOpacity(el, to); return Promise.resolve(); }
+      return new Promise(res=>{
+        const m = getMat(el); if (!m) { res(); return; }
+        m.transparent = true;
+        const from = Number.isFinite(m.opacity) ? m.opacity : 1;
+        const dur = Math.max(0, ms|0); if (dur===0){ setOpacity(el, to); res(); return; }
+        const start = performance.now(); const dir = to > from ? 1 : -1;
+        function step(now){
+          const t = Math.max(0, Math.min(1, (now - start)/dur));
+          const val = from + (to - from)*t;
+          m.opacity = dir>0 ? Math.min(val, to) : Math.max(val, to);
+          m.needsUpdate = true;
+          if (t>=1) res(); else requestAnimationFrame(step);
+        }
+        requestAnimationFrame(step);
+      });
+    }
+    const fadeInSprite  = el => { setOpacity(el, CONFIG.FADES_BUTTON_SPRITE.startOpacity); setVisible(el,true); return fadeTo(el, CONFIG.FADES_BUTTON_SPRITE.targetOpacity, CONFIG.FADES_BUTTON_SPRITE.inMs); };
+    const fadeOutSprite = el => fadeTo(el, 0, CONFIG.FADES_BUTTON_SPRITE.outMs);
+
+    function hideButtonSprite(bundle){
+      // apaga de verdade o PNG de botões e desliga hitboxes
+      bundle?.btnSequencer?.stop?.();
+      setOpacity(bundle.buttonSprite, 0);
+      setVisible(bundle.buttonSprite, false);
+      setVisible(bundle.buttons, false);
+    }
+
     async function playBundle(bundle){
       await Promise.all([preloadSequence(SEQ.ANIM1), preloadSequence(SEQ.KEEP), preloadSequence(SEQ.BUTTON)]);
       bundle.setVisibleAll(true);
 
       bundle.playing = true; bundle.keepAlive = false;
-      bundle.sequencer.play(bundle.sprite, SEQ.ANIM1, ()=>{
+
+      bundle.sequencer.play(bundle.sprite, SEQ.ANIM1, async ()=>{
         bundle.playing = false; bundle.keepAlive = true;
+
+        // entra em KEEP
         bundle.sequencer.play(bundle.sprite, SEQ.KEEP);
+
+        // habilita hitboxes (invisíveis) e prepara sprite de botões sem "piscar"
         setVisible(bundle.buttons, true);
-        const mode = (bundle.buttons?.id === 'buttonsAR') ? 'ar' : 'free';
-        applyButtonsVisibility(bundle.buttons, mode);
+        applyButtonsVisibility(bundle.buttons, (bundle.buttons?.id === 'buttonsAR') ? 'ar' : 'free');
 
-        // Habilitar links somente agora (após ANIM1)
-        if (mode === 'ar')   state.linksEnabledAR   = true;
-        if (mode === 'free') state.linksEnabledFree = true;
+        setOpacity(bundle.buttonSprite, CONFIG.FADES_BUTTON_SPRITE.startOpacity);
+        setVisible(bundle.buttonSprite, true);
 
-        // AR: mostrar voltar após 1 loop do KEEP
-        if (mode === 'ar') {
+        // animação dos botões + fade-in em paralelo
+        bundle.btnSequencer.play(bundle.buttonSprite, SEQ.BUTTON);
+        await fadeInSprite(bundle.buttonSprite);
+
+        // habilita links após entrada dos botões
+        if (bundle.buttons?.id === 'buttonsAR') state.linksEnabledAR = true;
+        else state.linksEnabledFree = true;
+
+        // botão "voltar" no AR após 1 loop do KEEP
+        if (bundle.buttons?.id === 'buttonsAR') {
           const frames = (SEQ.KEEP.end - SEQ.KEEP.start + 1);
           const loopMs = (frames / (SEQ.KEEP.fps || 1)) * 1000;
           setTimeout(()=>{ if (bundle.keepAlive && state.detected) show(backArBtn); }, loopMs);
         }
 
-        log('Botões agora visíveis!');
+        log('Botões agora visíveis (sprite com fade-in).');
       });
-
-      bundle.btnSequencer.play(bundle.buttonSprite, SEQ.BUTTON);
     }
 
-    // ===== Fluxo AR =====
-    async function startARFlow(){
-      if (!state.detected || AR.playing || AR.keepAlive) return;
-      hide(startBtn); hide(backArBtn); // limpeza
-      await playBundle(AR);
-      dumpAR();
-    }
     function stopARFlow(){
       AR.sequencer.stop(); AR.btnSequencer.stop();
+      hideButtonSprite(AR); // essencial para não reexibir
       AR.setVisibleAll(false);
       AR.playing = false; AR.keepAlive = false;
       hide(backArBtn);
-      // Bloqueia links AR ao sair do AR
       state.linksEnabledAR = false;
       log('AR parado'); dumpAR();
     }
 
-    // ===== Fluxo Livre =====
     function prepareFreeAnchor(){
       if (freeRoot.parentEl !== scene) scene.appendChild(freeRoot);
       setVisible(freeRoot, true);
@@ -477,10 +526,7 @@
 
       FREE.setVisibleAll(true);
       setVisible(FREE.sprite, true);
-      FREE.sprite.object3D.visible = true;
       FREE.buttons.object3D.visible = false;
-      debugDumpObject3D('freeRoot (antes 1º frame)', freeRoot);
-      debugDumpObject3D('spriteFree (antes 1º frame)', FREE.sprite);
 
       const mesh = FREE.sprite.getObject3D('mesh');
       if (mesh && mesh.material) {
@@ -512,21 +558,18 @@
         }
       }
 
-      debugDumpObject3D('spriteFree (pos 1º frame)', FREE.sprite);
-
       hide(startFallbackBtn); hide(guideTarget);
       show(backFreeBtn);
       await playBundle(FREE);
-      debugDumpObject3D('spriteFree (pos start bundle)', FREE.sprite);
       dumpFREE();
     }
 
     function stopFreeFlow(){
       FREE.sequencer.stop(); FREE.btnSequencer.stop();
+      hideButtonSprite(FREE); // essencial para não reexibir
       FREE.setVisibleAll(false); setVisible(freeRoot, false);
       FREE.playing = false; FREE.keepAlive = false;
       hide(backFreeBtn);
-      // Bloqueia links do Free ao sair
       state.linksEnabledFree = false;
       log('FREE parado'); dumpFREE();
     }
@@ -542,100 +585,11 @@
       detected: false,
       fallbackTimer: null,
       openGuardUntil: 0,
-      // NOVO: flags de habilitação de links
       linksEnabledAR: false,
       linksEnabledFree: false,
     };
     const backFreeBtn = document.getElementById('backFreeBtn');
     const backArBtn   = document.getElementById('backArBtn');
-
-    // ===== Reverse para FREE =====
-    function playReverseFreeAnimation(onEnd){
-      FREE.sequencer.stop();
-      let frame = SEQ.ANIM1.end;
-      const interval = 1000 / (SEQ.ANIM1.fps || 10);
-      function tick(){
-        const idx = frame - SEQ.ANIM1.start;
-        const id = SEQ.ANIM1.ids[idx];
-        if (id) setSrcByAssetId(FREE.sprite, id);
-        frame--;
-        if (frame < SEQ.ANIM1.start){
-          FREE.sequencer.stop();
-          if (onEnd) onEnd();
-        } else {
-          setTimeout(tick, interval);
-        }
-      }
-      tick();
-    }
-
-    // ===== Reverse para AR =====
-    function playReverseArAnimation(onEnd){
-      AR.sequencer.stop();
-      let frame = SEQ.ANIM1.end;
-      const interval = 1000 / (SEQ.ANIM1.fps || 10);
-      function tick(){
-        const idx = frame - SEQ.ANIM1.start;
-        const id = SEQ.ANIM1.ids[idx];
-        if (id) setSrcByAssetId(AR.sprite, id);
-        frame--;
-        if (frame < SEQ.ANIM1.start){
-          AR.sequencer.stop();
-          if (onEnd) onEnd();
-        } else {
-          setTimeout(tick, interval);
-        }
-      }
-      tick();
-    }
-
-    // ===== Back FREE =====
-    backFreeBtn.addEventListener('pointerdown', ()=>{
-      if (!FREE.playing && !FREE.keepAlive) return;
-      backFreeBtn.disabled = true;
-
-      playReverseFreeAnimation(()=>{
-        stopFreeFlow();
-        statusEl.textContent = 'Procurando alvo...';
-        show(guideTarget);
-        backFreeBtn.disabled = false;
-
-        scheduleFallbackButton();
-        log('Voltou para targetLost após reverso (FREE)');
-      });
-    }, {passive:true});
-
-    // ===== Back AR (mesma lógica) =====
-    backArBtn.addEventListener('pointerdown', ()=>{
-      if (!AR.playing && !AR.keepAlive) return;
-      backArBtn.disabled = true;
-
-      // esconde UI de AR durante o reverso
-      setVisible(AR.buttons, false);
-      AR.keepAlive = false;
-      AR.sequencer.stop();
-
-      // garante último frame e rebobina
-      setSrcByAssetId(AR.sprite, SEQ.ANIM1.ids[SEQ.ANIM1.ids.length-1]);
-      playReverseArAnimation(()=>{
-        // encerra AR e força estado "targetLost"
-        stopARFlow();
-        stopCaptureAnchorPose();
-        state.detected = false;
-
-        statusEl.textContent = 'Procurando alvo...';
-        hide(startBtn);
-        show(guideTarget);
-
-        // Bloqueia links AR ao sair
-        state.linksEnabledAR = false;
-
-        // respeita o delay para reexibir "Ativar animação sem alvo"
-        scheduleFallbackButton();
-        backArBtn.disabled = false;
-        log('Voltou para targetLost após reverso (AR)');
-      });
-    }, {passive:true});
 
     function scheduleFallbackButton(){
       if (state.fallbackTimer) clearTimeout(state.fallbackTimer);
@@ -669,11 +623,10 @@
     // ===== MindAR Events =====
     anchor.addEventListener('targetFound', async ()=>{
       state.detected = true;
-      // Bloqueia links AR enquanto ANIM1 não terminou
       state.linksEnabledAR = false;
 
       hide(startFallbackBtn); hide(guideTarget);
-      hide(backArBtn); // limpeza
+      hide(backArBtn);
       stopFreeFlow();
       statusEl.textContent = 'Clique no botão ou toque para iniciar';
 
@@ -682,13 +635,16 @@
       await preloadSequence(SEQ.ANIM1);
       setVisible(AR.sprite, true);
       setSrcByAssetId(AR.sprite, SEQ.ANIM1.ids[0]);
+      // garantir sprites de botão invisíveis no início
+      setVisible(AR.buttonSprite, false); setOpacity(AR.buttonSprite, 0);
+      setVisible(FREE.buttonSprite, false); setOpacity(FREE.buttonSprite, 0);
+
       show(startBtn);
-      log('targetFound (aguardando confirmação do usuário; preview aplicado)');
+      log('targetFound (preview aplicado)');
     });
 
     anchor.addEventListener('targetLost', ()=>{
       state.detected = false;
-      // Bloqueia links AR ao perder o alvo
       state.linksEnabledAR = false;
 
       stopCaptureAnchorPose();
@@ -715,6 +671,10 @@
       preloadAll();
       scheduleFallbackButton();
 
+      // garantir sprites de botão invisíveis e opacos=0 desde o boot
+      setVisible(AR.buttonSprite, false);   setOpacity(AR.buttonSprite, 0);
+      setVisible(FREE.buttonSprite, false); setOpacity(FREE.buttonSprite, 0);
+
       applyButtonsVisibility(document.getElementById('buttonsAR'), 'ar');
       applyButtonsVisibility(document.getElementById('buttonsFree'), 'free');
 
@@ -725,13 +685,37 @@
     scene.addEventListener('arError', (e)=>{ log('[MindAR] arError', e?.detail || ''); });
 
     // ===== Botões DOM =====
-    startBtn.addEventListener('pointerdown', ()=> startARFlow(), {passive:true});
+    startBtn.addEventListener('pointerdown', async ()=>{
+      if (!state.detected || AR.playing || AR.keepAlive) return;
+      hide(startBtn); hide(backArBtn);
+      await playBundle(AR);
+      dumpAR();
+    }, {passive:true});
+
     startFallbackBtn.addEventListener('pointerdown', ()=>{ if (!state.detected) startFreeFlow(); }, {passive:true});
+
+    // ===== Reverse genérico =====
+    function playReverse(el, cfg){
+      return new Promise(async (resolve)=>{
+        await preloadSequence(cfg);
+        let frame = cfg.end;
+        const interval = 1000 / (cfg.fps || 10);
+        const tick = ()=>{
+          const idx = frame - cfg.start;
+          const id = cfg.ids[idx];
+          if (id) setSrcByAssetId(el, id);
+          frame--;
+          if (frame < cfg.start){ resolve(); }
+          else { setTimeout(tick, interval); }
+        };
+        tick();
+      });
+    }
 
     // ===== Componentes A-Frame =====
     AFRAME.registerComponent('click-open-url', { schema:{ url:{type:'string'} }, init(){ log(`[click-open-url] init: ${this.data.url}`); } });
 
-    // ===== Raycast manual com guard de habilitação dos links =====
+    // ===== Raycast manual com guards =====
     (function setupManualClick(){
       let manualRaycaster=null, manualSetupDone=false; const mouse = new THREE.Vector2();
       function treeVisible(el){ if (!el?.object3D) return false; let o=el.object3D; while(o){ if(o.visible===false) return false; o=o.parent; } return el.getAttribute?.('visible')!=='false'; }
@@ -754,7 +738,6 @@
           let targetEl = hit.object?.el?.classList?.contains('btn') ? hit.object.el : hit.object?.userData?.element;
           if (!targetEl) return;
 
-          // Guard: só abre URL quando links estiverem habilitados
           const isInAR   = !!targetEl.closest?.('#buttonsAR');
           const isInFree = !!targetEl.closest?.('#buttonsFree');
           if ((isInAR && !state.linksEnabledAR) || (isInFree && !state.linksEnabledFree)) {
@@ -769,6 +752,77 @@
       }
       if (scene.hasLoaded) ready(); else scene.addEventListener('loaded', ready, {once:true});
     })();
+
+    // ===== Back FREE (fade-out definitivo + reverse) =====
+    backFreeBtn.addEventListener('pointerdown', async ()=>{
+      if (!FREE.playing && !FREE.keepAlive) return;
+      backFreeBtn.disabled = true;
+
+      FREE.sequencer.stop(); FREE.btnSequencer.stop();
+      FREE.keepAlive = false;
+
+      await fadeOutSprite(FREE.buttonSprite);
+      hideButtonSprite(FREE); // vis=false + opacity=0 + stop
+
+      await Promise.all([
+        playReverse(FREE.sprite, SEQ.ANIM1),
+        playReverse(FREE.buttonSprite, SEQ.BUTTON)
+      ]);
+
+      stopFreeFlow();
+      statusEl.textContent = 'Procurando alvo...';
+      show(guideTarget);
+      backFreeBtn.disabled = false;
+
+      scheduleFallbackButton();
+      log('FREE: reverse + fade-out no sprite de botões concluído.');
+    }, {passive:true});
+
+    // ===== Back AR (estado natural se alvo presente) =====
+    backArBtn.addEventListener('pointerdown', async ()=>{
+      if (!AR.playing && !AR.keepAlive) return;
+      backArBtn.disabled = true;
+
+      AR.sequencer.stop(); AR.btnSequencer.stop();
+      AR.keepAlive = false;
+
+      await fadeOutSprite(AR.buttonSprite);
+      hideButtonSprite(AR);
+
+      await Promise.all([
+        playReverse(AR.sprite, SEQ.ANIM1),
+        playReverse(AR.buttonSprite, SEQ.BUTTON)
+      ]);
+
+      if (state.detected) {
+        AR.playing = false;
+        AR.keepAlive = false;
+        setVisible(AR.sprite, true);
+        await preloadSequence(SEQ.ANIM1);
+        setSrcByAssetId(AR.sprite, SEQ.ANIM1.ids[0]);  // 1º frame
+        hide(backArBtn);
+        show(startBtn);
+        statusEl.textContent = 'Clique no botão ou toque para iniciar';
+        captureAnchorPose();
+        state.linksEnabledAR = false;
+
+        backArBtn.disabled = false;
+        log('AR: voltou ao 1º frame com reverse + fade-out (sprite de botões).');
+      } else {
+        stopARFlow();
+        stopCaptureAnchorPose();
+        state.detected = false;
+
+        statusEl.textContent = 'Procurando alvo...';
+        hide(startBtn);
+        show(guideTarget);
+
+        state.linksEnabledAR = false;
+        scheduleFallbackButton();
+        backArBtn.disabled = false;
+        log('AR: targetLost após reverse + fade-out (sprite de botões).');
+      }
+    }, {passive:true});
 
     window.addEventListener('error', (e)=> log('window error:', e.message));
   })();
