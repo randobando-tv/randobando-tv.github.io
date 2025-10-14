@@ -42,6 +42,9 @@
   <img id="guideTarget" src="assets/target.png" alt="guia para alinhar alvo">
   <button id="startBtn" class="cta">▶ Iniciar animação</button>
   <button id="startFallback" class="cta">Ativar animação sem alvo</button>
+  <button id="backFreeBtn" class="cta">⟲ Voltar</button>
+  <!-- voltar para ARmode -->
+  <button id="backArBtn" class="cta">⟲ Voltar</button>
 
   <!-- ===== Cena AR ===== -->
   <a-scene
@@ -165,40 +168,24 @@
     const CONFIG = Object.freeze({
       FALLBACK_DELAY_MS: 2000,
       FIRST_FRAME_TIMEOUT_MS: 2000,
-      DEFAULT_WORLD_DISTANCE: 3000, // ~distância onde o anchor costuma ficar
-      DEFAULT_WORLD_SCALE: 1000,    // ~escala típica do anchor
-
-      // ==== VISIBILIDADE DOS BOTÕES/TEXTOS (ajuste aqui) ====
+      DEFAULT_WORLD_DISTANCE: 3000,
+      DEFAULT_WORLD_SCALE: 1000,
       BUTTONS_VISIBILITY: {
-        ar:   { planes: false, texts: false }, // AR: mostrar retângulos e/ou textos?
-        free: { planes: false, texts: false }  // Livre: mostrar retângulos e/ou textos?
+        ar:   { planes: false, texts: false },
+        free: { planes: false, texts: false }
       }
     });
 
-    // ==== LAYOUT do modo LIVRE (sem alvo) ====
     const FREE_LAYOUT = Object.freeze({
-      root: {
-        offset: { x: 0, y: 0, z: 0 },
-        rotationEulerDeg: { x: 0, y: 0, z: 0 },
-        scaleMul: 1.0
-      },
-      sprite: {
-        position: { x: 0, y: 0, z: 0.001 },
-        size: { width: 1.2, height: 1.2 }
-      },
-      buttonSprite: {
-        position: { x: 0, y: 0, z: 0.24 },
-        size: { width: 1.2, height: 1.2 }
-      },
-      buttonsGroup: {
-        position: { x: 0, y: -0.10, z: 0.25 },
-        rotationEulerDeg: { x: 0, y: 0, z: 0 }
-      }
+      root: { offset: { x: 0, y: 0, z: 0 }, rotationEulerDeg: { x: 0, y: 0, z: 0 }, scaleMul: 1.0 },
+      sprite: { position: { x: 0, y: 0, z: 0.001 }, size: { width: 1.2, height: 1.2 } },
+      buttonSprite: { position: { x: 0, y: 0, z: 0.24 }, size: { width: 1.2, height: 1.2 } },
+      buttonsGroup: { position: { x: 0, y: -0.10, z: 0.25 }, rotationEulerDeg: { x: 0, y: 0, z: 0 } }
     });
 
     const SEQ = Object.freeze({
-      ANIM1: { name: 'anim1',  folder: 'assets/Anim1',    pattern: i => `anim1_${String(i).padStart(4,'0')}.png`, start: 1, end: 10, fps: 9, loop: false, ids: [] },
-      KEEP:  { name: 'keep',   folder: 'assets/Keepalive', pattern: i => `keep_${String(i).padStart(4,'0')}.png`,  start: 1, end: 6, fps: 3, loop: true,  ids: [] },
+      ANIM1: { name: 'anim1',  folder: 'assets/Anim1',    pattern: i => `anim1_${String(i).padStart(4,'0')}.png`, start: 1, end: 7, fps: 7, loop: false, ids: [] },
+      KEEP:  { name: 'keep',   folder: 'assets/Keepalive', pattern: i => `keep_${String(i).padStart(4,'0')}.png`,  start: 1, end: 3, fps: 2, loop: true,  ids: [] },
       BUTTON:{ name: 'button', folder: 'assets/Button',    pattern: i => `but_${String(i).padStart(4,'0')}.png`,  start: 1, end: 6, fps: 3, loop: false, ids: [] },
     });
 
@@ -213,14 +200,13 @@
       if (mesh?.material) mesh.material.needsUpdate = true;
     };
 
-    // ===== Debug / Log =====
     const panel = $('#panel');
     const statusEl = $('#status');
     const log = (...args)=>{
       const ts = new Date().toISOString().split('T')[1].replace('Z','');
       const line = `[${ts}] ` + args.map(x=>typeof x==='object'?JSON.stringify(x):String(x)).join(' ');
       console.log('[DBG]', ...args);
-      panel.textContent += line + "\n";
+      panel.textContent += line + "\\n";
       panel.scrollTop = panel.scrollHeight;
     };
     $('#debug').addEventListener('click', (e)=>{
@@ -233,7 +219,6 @@
     const scene = document.querySelector('a-scene');
     let arReady = false;
 
-    // ===== Assets / Preload =====
     const assetsEl = $('#assets');
     function ensureAssetImg(id, src){
       let el = document.getElementById(id);
@@ -285,7 +270,6 @@
       });
     }
 
-    // ===== Sequencer =====
     function makeSequencer(){
       let timerId = null;
       const stop = ()=>{ if(timerId){ clearTimeout(timerId); timerId=null; } };
@@ -338,7 +322,6 @@
     const dumpAR = ()=>{ dumpNode('spriteAR', AR.sprite); dumpNode('buttonSpriteAR', AR.buttonSprite); dumpNode('buttonsAR', AR.buttons); };
     const dumpFREE = ()=>{ dumpNode('spriteFree', FREE.sprite); dumpNode('buttonSpriteFree', FREE.buttonSprite); dumpNode('buttonsFree', FREE.buttons); };
 
-    // ===== Debug 3D avançado =====
     function debugDumpObject3D(label, el) {
       if (!el?.object3D) { log(`[dbg3D ${label}] el sem object3D`); return; }
       const o = el.object3D;
@@ -366,10 +349,9 @@
       log(`[dbg3D ${label}] vis=${o.visible} worldPos=${wp.toArray().map(n=>n.toFixed(3))} worldScale=${ws.toArray().map(n=>n.toFixed(3))} inFrustum=${inFrustum} ${matInfo}`);
     }
 
-    // ===== Posição segura na frente da câmera (local -> world) =====
     function placeInFrontOfCamera(obj3D, distance = CONFIG.DEFAULT_WORLD_DISTANCE) {
       const cam = scene.camera; if (!cam) return; cam.updateMatrixWorld(true);
-      const localFront = new THREE.Vector3(0, 0, -distance); // -Z é frente
+      const localFront = new THREE.Vector3(0, 0, -distance);
       const worldFront = localFront.clone(); cam.localToWorld(worldFront);
       const camWorldQuat = new THREE.Quaternion(); cam.getWorldQuaternion(camWorldQuat);
       obj3D.position.copy(worldFront);
@@ -380,7 +362,6 @@
       log(`[placeInFrontOfCamera] camPos=${camPos.toArray().map(n=>n.toFixed(3))} camDir=${camDir.toArray().map(n=>n.toFixed(3))} target=${worldFront.toArray().map(n=>n.toFixed(3))}`);
     }
 
-    // ===== APLICA layout específico do modo sem alvo =====
     function applyFreeLayout(){
       const root = freeRoot.object3D;
       const rot = FREE_LAYOUT.root.rotationEulerDeg;
@@ -403,7 +384,6 @@
       FREE.buttons.setAttribute('rotation', `${bg.rotationEulerDeg.x} ${bg.rotationEulerDeg.y} ${bg.rotationEulerDeg.z}`);
     }
 
-    // ===== helpers: visibilidade de botões/textos =====
     function setButtonPlaneMaterial(planeEl, showPlane){
       const mat = showPlane
         ? 'color:#222; transparent:true; opacity:0.8; side:double; depthTest:false; depthWrite:false'
@@ -412,16 +392,13 @@
       const mesh = planeEl.getObject3D('mesh');
       if (mesh && mesh.material) mesh.material.needsUpdate = true;
     }
-    function applyButtonsVisibility(groupEl, mode){ // mode: 'ar' | 'free'
+    function applyButtonsVisibility(groupEl, mode){
       if (!groupEl) return;
       const cfg = CONFIG.BUTTONS_VISIBILITY[mode] || {planes:false, texts:false};
-      // planos (hit-area)
       groupEl.querySelectorAll('.btn').forEach(p => setButtonPlaneMaterial(p, !!cfg.planes));
-      // textos
       groupEl.querySelectorAll('a-text').forEach(t => t.setAttribute('visible', !!cfg.texts));
     }
 
-    // ===== Play bundle genérico =====
     async function playBundle(bundle){
       await Promise.all([preloadSequence(SEQ.ANIM1), preloadSequence(SEQ.KEEP), preloadSequence(SEQ.BUTTON)]);
       bundle.setVisibleAll(true);
@@ -431,9 +408,20 @@
         bundle.playing = false; bundle.keepAlive = true;
         bundle.sequencer.play(bundle.sprite, SEQ.KEEP);
         setVisible(bundle.buttons, true);
-        // aplica visibilidade conforme modo
         const mode = (bundle.buttons?.id === 'buttonsAR') ? 'ar' : 'free';
         applyButtonsVisibility(bundle.buttons, mode);
+
+        // Habilitar links somente agora (após ANIM1)
+        if (mode === 'ar')   state.linksEnabledAR   = true;
+        if (mode === 'free') state.linksEnabledFree = true;
+
+        // AR: mostrar voltar após 1 loop do KEEP
+        if (mode === 'ar') {
+          const frames = (SEQ.KEEP.end - SEQ.KEEP.start + 1);
+          const loopMs = (frames / (SEQ.KEEP.fps || 1)) * 1000;
+          setTimeout(()=>{ if (bundle.keepAlive && state.detected) show(backArBtn); }, loopMs);
+        }
+
         log('Botões agora visíveis!');
       });
 
@@ -443,7 +431,7 @@
     // ===== Fluxo AR =====
     async function startARFlow(){
       if (!state.detected || AR.playing || AR.keepAlive) return;
-      hide(startBtn);
+      hide(startBtn); hide(backArBtn); // limpeza
       await playBundle(AR);
       dumpAR();
     }
@@ -451,6 +439,9 @@
       AR.sequencer.stop(); AR.btnSequencer.stop();
       AR.setVisibleAll(false);
       AR.playing = false; AR.keepAlive = false;
+      hide(backArBtn);
+      // Bloqueia links AR ao sair do AR
+      state.linksEnabledAR = false;
       log('AR parado'); dumpAR();
     }
 
@@ -491,7 +482,6 @@
       debugDumpObject3D('freeRoot (antes 1º frame)', freeRoot);
       debugDumpObject3D('spriteFree (antes 1º frame)', FREE.sprite);
 
-      // garantir sobreposição
       const mesh = FREE.sprite.getObject3D('mesh');
       if (mesh && mesh.material) {
         mesh.material.depthTest = false;
@@ -525,6 +515,7 @@
       debugDumpObject3D('spriteFree (pos 1º frame)', FREE.sprite);
 
       hide(startFallbackBtn); hide(guideTarget);
+      show(backFreeBtn);
       await playBundle(FREE);
       debugDumpObject3D('spriteFree (pos start bundle)', FREE.sprite);
       dumpFREE();
@@ -534,6 +525,9 @@
       FREE.sequencer.stop(); FREE.btnSequencer.stop();
       FREE.setVisibleAll(false); setVisible(freeRoot, false);
       FREE.playing = false; FREE.keepAlive = false;
+      hide(backFreeBtn);
+      // Bloqueia links do Free ao sair
+      state.linksEnabledFree = false;
       log('FREE parado'); dumpFREE();
     }
 
@@ -544,7 +538,104 @@
     const show = el => { if(el) el.style.display = 'inline-block'; };
     const hide = el => { if(el) el.style.display = 'none'; };
 
-    const state = { detected: false, fallbackTimer: null, openGuardUntil: 0 };
+    const state = {
+      detected: false,
+      fallbackTimer: null,
+      openGuardUntil: 0,
+      // NOVO: flags de habilitação de links
+      linksEnabledAR: false,
+      linksEnabledFree: false,
+    };
+    const backFreeBtn = document.getElementById('backFreeBtn');
+    const backArBtn   = document.getElementById('backArBtn');
+
+    // ===== Reverse para FREE =====
+    function playReverseFreeAnimation(onEnd){
+      FREE.sequencer.stop();
+      let frame = SEQ.ANIM1.end;
+      const interval = 1000 / (SEQ.ANIM1.fps || 10);
+      function tick(){
+        const idx = frame - SEQ.ANIM1.start;
+        const id = SEQ.ANIM1.ids[idx];
+        if (id) setSrcByAssetId(FREE.sprite, id);
+        frame--;
+        if (frame < SEQ.ANIM1.start){
+          FREE.sequencer.stop();
+          if (onEnd) onEnd();
+        } else {
+          setTimeout(tick, interval);
+        }
+      }
+      tick();
+    }
+
+    // ===== Reverse para AR =====
+    function playReverseArAnimation(onEnd){
+      AR.sequencer.stop();
+      let frame = SEQ.ANIM1.end;
+      const interval = 1000 / (SEQ.ANIM1.fps || 10);
+      function tick(){
+        const idx = frame - SEQ.ANIM1.start;
+        const id = SEQ.ANIM1.ids[idx];
+        if (id) setSrcByAssetId(AR.sprite, id);
+        frame--;
+        if (frame < SEQ.ANIM1.start){
+          AR.sequencer.stop();
+          if (onEnd) onEnd();
+        } else {
+          setTimeout(tick, interval);
+        }
+      }
+      tick();
+    }
+
+    // ===== Back FREE =====
+    backFreeBtn.addEventListener('pointerdown', ()=>{
+      if (!FREE.playing && !FREE.keepAlive) return;
+      backFreeBtn.disabled = true;
+
+      playReverseFreeAnimation(()=>{
+        stopFreeFlow();
+        statusEl.textContent = 'Procurando alvo...';
+        show(guideTarget);
+        backFreeBtn.disabled = false;
+
+        scheduleFallbackButton();
+        log('Voltou para targetLost após reverso (FREE)');
+      });
+    }, {passive:true});
+
+    // ===== Back AR (mesma lógica) =====
+    backArBtn.addEventListener('pointerdown', ()=>{
+      if (!AR.playing && !AR.keepAlive) return;
+      backArBtn.disabled = true;
+
+      // esconde UI de AR durante o reverso
+      setVisible(AR.buttons, false);
+      AR.keepAlive = false;
+      AR.sequencer.stop();
+
+      // garante último frame e rebobina
+      setSrcByAssetId(AR.sprite, SEQ.ANIM1.ids[SEQ.ANIM1.ids.length-1]);
+      playReverseArAnimation(()=>{
+        // encerra AR e força estado "targetLost"
+        stopARFlow();
+        stopCaptureAnchorPose();
+        state.detected = false;
+
+        statusEl.textContent = 'Procurando alvo...';
+        hide(startBtn);
+        show(guideTarget);
+
+        // Bloqueia links AR ao sair
+        state.linksEnabledAR = false;
+
+        // respeita o delay para reexibir "Ativar animação sem alvo"
+        scheduleFallbackButton();
+        backArBtn.disabled = false;
+        log('Voltou para targetLost após reverso (AR)');
+      });
+    }, {passive:true});
 
     function scheduleFallbackButton(){
       if (state.fallbackTimer) clearTimeout(state.fallbackTimer);
@@ -578,7 +669,11 @@
     // ===== MindAR Events =====
     anchor.addEventListener('targetFound', async ()=>{
       state.detected = true;
+      // Bloqueia links AR enquanto ANIM1 não terminou
+      state.linksEnabledAR = false;
+
       hide(startFallbackBtn); hide(guideTarget);
+      hide(backArBtn); // limpeza
       stopFreeFlow();
       statusEl.textContent = 'Clique no botão ou toque para iniciar';
 
@@ -593,9 +688,14 @@
 
     anchor.addEventListener('targetLost', ()=>{
       state.detected = false;
+      // Bloqueia links AR ao perder o alvo
+      state.linksEnabledAR = false;
+
       stopCaptureAnchorPose();
       statusEl.textContent = 'Procurando alvo...';
       hide(startBtn); show(guideTarget);
+      hide(backArBtn);
+      show(startFallbackBtn);
       stopARFlow(); scheduleFallbackButton();
       log('targetLost');
     });
@@ -615,7 +715,6 @@
       preloadAll();
       scheduleFallbackButton();
 
-      // aplica visibilidade conforme a CONFIG no boot
       applyButtonsVisibility(document.getElementById('buttonsAR'), 'ar');
       applyButtonsVisibility(document.getElementById('buttonsFree'), 'free');
 
@@ -631,17 +730,11 @@
 
     // ===== Componentes A-Frame =====
     AFRAME.registerComponent('click-open-url', { schema:{ url:{type:'string'} }, init(){ log(`[click-open-url] init: ${this.data.url}`); } });
-    AFRAME.registerComponent('hover-color', {
-      schema: { over:{default:'#444'}, out:{default:'#222'} },
-      init(){ this.onEnter=()=>this.el.setAttribute('color', this.data.over); this.onLeave=()=>this.el.setAttribute('color', this.data.out);
-              this.el.addEventListener('mouseenter', this.onEnter); this.el.addEventListener('mouseleave', this.onLeave); },
-      remove(){ this.el.removeEventListener('mouseenter', this.onEnter); this.el.removeEventListener('mouseleave', this.onLeave); }
-    });
 
-    // ===== Click manual via raycaster =====
+    // ===== Raycast manual com guard de habilitação dos links =====
     (function setupManualClick(){
       let manualRaycaster=null, manualSetupDone=false; const mouse = new THREE.Vector2();
-      function treeVisible(el){ if (!el?.object3D) return false; let o=el.object3D; while(o){ if(o.visible===false) return false; o=o.parent; } return el.getAttribute?.('visible')!==false; }
+      function treeVisible(el){ if (!el?.object3D) return false; let o=el.object3D; while(o){ if(o.visible===false) return false; o=o.parent; } return el.getAttribute?.('visible')!=='false'; }
       function ready(){
         if (manualSetupDone) return;
         const camera = scene.camera, canvas = scene.canvas; if (!camera || !canvas){ setTimeout(ready, 300); return; }
@@ -659,7 +752,17 @@
           });
           const hit = manualRaycaster.intersectObjects(meshes, true)[0]; if (!hit) return;
           let targetEl = hit.object?.el?.classList?.contains('btn') ? hit.object.el : hit.object?.userData?.element;
-          if (!targetEl) return; const comp = targetEl.components['click-open-url']; if(!comp) return; const url = comp.data.url;
+          if (!targetEl) return;
+
+          // Guard: só abre URL quando links estiverem habilitados
+          const isInAR   = !!targetEl.closest?.('#buttonsAR');
+          const isInFree = !!targetEl.closest?.('#buttonsFree');
+          if ((isInAR && !state.linksEnabledAR) || (isInFree && !state.linksEnabledFree)) {
+            log('[Manual Click] ignorado: links não habilitados ainda');
+            return;
+          }
+
+          const comp = targetEl.components['click-open-url']; if(!comp) return; const url = comp.data.url;
           try{ const w = window.open(url, '_blank', 'noopener,noreferrer'); state.openGuardUntil = performance.now() + 700; log(`OPEN_RESULT: ${!!w}`); }
           catch(err){ log('[Manual Click] erro:', err.message); }
         }, {passive:false, capture:true});
