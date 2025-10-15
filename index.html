@@ -80,31 +80,31 @@
 
       <a-entity id="buttonsAR" visible="false" position="0 -0.1 0.25" rotation="0 0 0">
         <!-- Hitboxes invisíveis; não alteramos opacidade por fade -->
-        <a-plane class="btn" position="-0.29 0.13 0" width="0.24" height="0.14"
+        <a-plane class="btn" position="-0.29 0.13 0" width="0.24" height="0.11"
                  material="color:#fff; transparent:true; opacity:0; side:double; depthTest:false; depthWrite:false"
-                 click-open-url="url:https://randobando.tv/">
+                 click-open-url="url:https://randobando.tv/work">
           <a-text value=".tv" align="center" width="1.2" position="0 0 0.01" visible="false"></a-text>
         </a-plane>
 
-        <a-plane class="btn" position="-0.29 -0.03 0" width="0.24" height="0.14"
+        <a-plane class="btn" position="-0.31 0.01 0" width="0.18" height="0.09"
                  material="color:#fff; transparent:true; opacity:0; side:double; depthTest:false; depthWrite:false"
                  click-open-url="url:https://randobando.tv/play">
           <a-text value="play" align="center" width="1.2" position="0 0 0.01" visible="false"></a-text>
         </a-plane>
 
-        <a-plane class="btn" position="0.315 0.17 0" width="0.18" height="0.14"
+        <a-plane class="btn" position="0.32 -0.15 0" width="0.16" height="0.10"
                  material="color:#fff; transparent:true; opacity:0; side:double; depthTest:false; depthWrite:false"
                  click-open-url="url:mailto:oi@randobando.tv">
           <a-text value="contact" align="center" width="1.2" position="0 0 0.01" visible="false"></a-text>
         </a-plane>
 
-        <a-plane class="btn" position="0.315 0.01 0" width="0.14" height="0.14"
+        <a-plane class="btn" position="0.315 0.17 0" width="0.15" height="0.13"
                  material="color:#fff; transparent:true; opacity:0; side:double; depthTest:false; depthWrite:false"
                  click-open-url="url:https://www.instagram.com/randobando.tv/">
           <a-text value="inst" align="center" width="1.2" position="0 0 0.01" visible="false"></a-text>
         </a-plane>
 
-        <a-plane class="btn" position="0.315 -0.15 0" width="0.14" height="0.14"
+        <a-plane class="btn" position="0.315 -0.01 0" width="0.14" height="0.14"
                  material="color:#fff; transparent:true; opacity:0; side:double; depthTest:false; depthWrite:false"
                  click-open-url="url:https://www.behance.net/randobando">
           <a-text value="beh" align="center" width="1.2" position="0 0 0.01" visible="false"></a-text>
@@ -129,31 +129,31 @@
                material="transparent: true; alphaTest: 0.01; side: double;"></a-image>
 
       <a-entity id="buttonsFree" visible="false" position="0 -0.1 0.25" rotation="0 0 0">
-        <a-plane class="btn" position="-0.29 0.13 0.001" width="0.24" height="0.14"
+        <a-plane class="btn" position="-0.29 0.13 0" width="0.24" height="0.11"
                  material="color:#fff; transparent:true; opacity:0; side:double; depthTest:false; depthWrite:false"
-                 click-open-url="url:https://randobando.tv/">
+                 click-open-url="url:https://randobando.tv/work">
           <a-text value=".tv" align="center" width="1.2" position="0 0 0.01" visible="false"></a-text>
         </a-plane>
 
-        <a-plane class="btn" position="-0.29 -0.04 0.001" width="0.24" height="0.14"
+        <a-plane class="btn" position="-0.31 0.01 0" width="0.18" height="0.09"
                  material="color:#fff; transparent:true; opacity:0; side:double; depthTest:false; depthWrite:false"
                  click-open-url="url:https://randobando.tv/play">
           <a-text value="play" align="center" width="1.2" position="0 0 0.01" visible="false"></a-text>
         </a-plane>
 
-        <a-plane class="btn" position="0.315 0.17 0.001" width="0.18" height="0.14"
+        <a-plane class="btn" position="0.32 -0.15 0" width="0.16" height="0.10"
                  material="color:#fff; transparent:true; opacity:0; side:double; depthTest:false; depthWrite:false"
                  click-open-url="url:mailto:oi@randobando.tv">
           <a-text value="contact" align="center" width="1.2" position="0 0 0.01" visible="false"></a-text>
         </a-plane>
 
-        <a-plane class="btn" position="0.315 0.01 0.001" width="0.14" height="0.14"
+        <a-plane class="btn" position="0.315 0.17 0" width="0.15" height="0.13"
                  material="color:#fff; transparent:true; opacity:0; side:double; depthTest:false; depthWrite:false"
                  click-open-url="url:https://www.instagram.com/randobando.tv/">
           <a-text value="inst" align="center" width="1.2" position="0 0 0.01" visible="false"></a-text>
         </a-plane>
 
-        <a-plane class="btn" position="0.315 -0.15 0.001" width="0.14" height="0.14"
+        <a-plane class="btn" position="0.315 -0.01 0" width="0.14" height="0.14"
                  material="color:#fff; transparent:true; opacity:0; side:double; depthTest:false; depthWrite:false"
                  click-open-url="url:https://www.behance.net/randobando">
           <a-text value="beh" align="center" width="1.2" position="0 0 0.01" visible="false"></a-text>
@@ -177,7 +177,7 @@
       },
       // ======= CONTROLES DE FADE (apenas no sprite PNG dos botões) =======
       FADES_BUTTON_SPRITE: {
-        enabled: true,
+        enabled: false,
         inMs: 500,
         outMs: 500,
         targetOpacity: 1,
@@ -694,8 +694,8 @@
 
     startFallbackBtn.addEventListener('pointerdown', ()=>{ if (!state.detected) startFreeFlow(); }, {passive:true});
 
-    // ===== Reverse genérico =====
-    function playReverse(el, cfg){
+    // ===== Reverse genérico com delay opcional =====
+    function playReverse(el, cfg, delayMs = 0){
       return new Promise(async (resolve)=>{
         await preloadSequence(cfg);
         let frame = cfg.end;
@@ -705,7 +705,10 @@
           const id = cfg.ids[idx];
           if (id) setSrcByAssetId(el, id);
           frame--;
-          if (frame < cfg.start){ resolve(); }
+          if (frame < cfg.start){
+            if (delayMs > 0) setTimeout(resolve, delayMs);
+            else resolve();
+          }
           else { setTimeout(tick, interval); }
         };
         tick();
@@ -753,79 +756,186 @@
       if (scene.hasLoaded) ready(); else scene.addEventListener('loaded', ready, {once:true});
     })();
 
-    // ===== Back FREE (fade-out definitivo + reverse) =====
-    backFreeBtn.addEventListener('pointerdown', async ()=>{
-      if (!FREE.playing && !FREE.keepAlive) return;
-      backFreeBtn.disabled = true;
+    // ===== Back FREE (reverse visível do sprite de botões) =====
+      backFreeBtn.addEventListener('pointerdown', async ()=> {
+        if (!FREE.playing && !FREE.keepAlive) return;
+        backFreeBtn.disabled = true;
 
-      FREE.sequencer.stop(); FREE.btnSequencer.stop();
-      FREE.keepAlive = false;
+        FREE.sequencer.stop(); 
+        FREE.btnSequencer.stop();
+        FREE.keepAlive = false;
 
-      await fadeOutSprite(FREE.buttonSprite);
-      hideButtonSprite(FREE); // vis=false + opacity=0 + stop
+        setVisible(FREE.buttonSprite, true);
+        setOpacity(FREE.buttonSprite, 1);
 
-      await Promise.all([
-        playReverse(FREE.sprite, SEQ.ANIM1),
-        playReverse(FREE.buttonSprite, SEQ.BUTTON)
-      ]);
+        // 1) Reverse “de saída” com delay entre animações
+        await playReverse(FREE.buttonSprite, SEQ.BUTTON);
+        await playReverse(FREE.sprite, SEQ.ANIM1, 100); //  delay after button reverse
 
-      stopFreeFlow();
-      statusEl.textContent = 'Procurando alvo...';
-      show(guideTarget);
-      backFreeBtn.disabled = false;
+        // 2) Agora sim: fade-out e ocultar definitivamente a camada de botões
+        await fadeOutSprite(FREE.buttonSprite);
+        hideButtonSprite(FREE);
 
-      scheduleFallbackButton();
-      log('FREE: reverse + fade-out no sprite de botões concluído.');
-    }, {passive:true});
-
-    // ===== Back AR (estado natural se alvo presente) =====
-    backArBtn.addEventListener('pointerdown', async ()=>{
-      if (!AR.playing && !AR.keepAlive) return;
-      backArBtn.disabled = true;
-
-      AR.sequencer.stop(); AR.btnSequencer.stop();
-      AR.keepAlive = false;
-
-      await fadeOutSprite(AR.buttonSprite);
-      hideButtonSprite(AR);
-
-      await Promise.all([
-        playReverse(AR.sprite, SEQ.ANIM1),
-        playReverse(AR.buttonSprite, SEQ.BUTTON)
-      ]);
-
-      if (state.detected) {
-        AR.playing = false;
-        AR.keepAlive = false;
-        setVisible(AR.sprite, true);
-        await preloadSequence(SEQ.ANIM1);
-        setSrcByAssetId(AR.sprite, SEQ.ANIM1.ids[0]);  // 1º frame
-        hide(backArBtn);
-        show(startBtn);
-        statusEl.textContent = 'Clique no botão ou toque para iniciar';
-        captureAnchorPose();
-        state.linksEnabledAR = false;
-
-        backArBtn.disabled = false;
-        log('AR: voltou ao 1º frame com reverse + fade-out (sprite de botões).');
-      } else {
-        stopARFlow();
-        stopCaptureAnchorPose();
-        state.detected = false;
-
+        stopFreeFlow();
         statusEl.textContent = 'Procurando alvo...';
-        hide(startBtn);
         show(guideTarget);
+        backFreeBtn.disabled = false;
 
-        state.linksEnabledAR = false;
         scheduleFallbackButton();
+        log('FREE: reverse visível do sprite de botões concluído.');
+      }, {passive:true});
+
+
+    // ===== Back AR (reverse visível do sprite de botões) =====
+      backArBtn.addEventListener('pointerdown', async ()=> {
+        if (!AR.playing && !AR.keepAlive) return;
+        backArBtn.disabled = true;
+
+        AR.sequencer.stop(); 
+        AR.btnSequencer.stop();
+        AR.keepAlive = false;
+
+        setVisible(AR.buttonSprite, true);
+        setOpacity(AR.buttonSprite, 1);
+
+        // 1) Reverse “de saída” com delay entre animações
+        await playReverse(AR.buttonSprite, SEQ.BUTTON);
+        await playReverse(AR.sprite, SEQ.ANIM1, 100); // delay after button reverse
+
+        // 2) Agora faz fade-out e esconde definitivo
+        await fadeOutSprite(AR.buttonSprite);
+        hideButtonSprite(AR);
+
+        if (state.detected) {
+          AR.playing = false;
+          AR.keepAlive = false;
+          setVisible(AR.sprite, true);
+          await preloadSequence(SEQ.ANIM1);
+          setSrcByAssetId(AR.sprite, SEQ.ANIM1.ids[0]); // volta pro 1º frame
+          hide(backArBtn);
+          show(startBtn);
+          statusEl.textContent = 'Clique no botão ou toque para iniciar';
+          captureAnchorPose();
+          state.linksEnabledAR = false;
+        } else {
+          stopARFlow();
+          stopCaptureAnchorPose();
+          state.detected = false;
+          statusEl.textContent = 'Procurando alvo...';
+          hide(startBtn);
+          show(guideTarget);
+          state.linksEnabledAR = false;
+          scheduleFallbackButton();
+        }
+
         backArBtn.disabled = false;
-        log('AR: targetLost após reverse + fade-out (sprite de botões).');
-      }
-    }, {passive:true});
+        log('AR: reverse visível do sprite de botões concluído.');
+      }, {passive:true});
+
 
     window.addEventListener('error', (e)=> log('window error:', e.message));
   })();
   </script>
+  <script>
+(() => {
+  // Evita dupla instalação
+  if (window.__EDIT_BTN_LOCK__) return;
+  window.__EDIT_BTN_LOCK__ = true;
+
+  // 🔧 CONFIG
+  const EDIT_MODE = false;          // ← deixe true enquanto for reposicionar
+  const KILL_FADES = false;         // remove anim/fades que mexem em visibilidade/opacity
+  const FORCE_INTERVAL_MS = 250;   // “tapinha” extra periódico além do tick()
+
+  // Componente que força visibilidade no runtime
+  AFRAME.registerComponent('edit-force-visible', {
+    schema: { killFades: {type: 'boolean', default: true} },
+    init() {
+      this._last = 0;
+      if (this.data.killFades) this.killFadesOnce();
+      // “tapinhas” periódicos para caso outros scripts re-hidem
+      this._iv = setInterval(() => this.forceShow(), FORCE_INTERVAL_MS);
+      console.log('[EDIT] edit-force-visible ativo');
+    },
+    remove() {
+      if (this._iv) clearInterval(this._iv);
+    },
+    // remove componentes de animação/fade comuns
+    killFadesOnce() {
+      document.querySelectorAll('.btn').forEach(btn => {
+        // remove animation__* que mudam visible/opacity
+        [...btn.attributes].forEach(attr => {
+          const n = attr.name;
+          if (n.startsWith('animation__')) {
+            const v = attr.value.toLowerCase();
+            if (v.includes('visible') || v.includes('opacity')) btn.removeAttribute(n);
+          }
+        });
+        const sprite = btn.querySelector('.btn-sprite, [data-sprite="true"]');
+        if (sprite) {
+          [...sprite.attributes].forEach(attr => {
+            const n = attr.name;
+            if (n.startsWith('animation__')) {
+              const v = attr.value.toLowerCase();
+              if (v.includes('visible') || v.includes('opacity')) sprite.removeAttribute(n);
+            }
+          });
+        }
+      });
+    },
+    // força visibilidade e topo de render
+    forceShow() {
+      document.querySelectorAll('.btn').forEach(btn => {
+        const target = btn.querySelector('.btn-sprite, [data-sprite="true"]') || btn;
+
+        // 1) sempre visível
+        try { btn.object3D.visible = true; } catch {}
+        try { target.object3D.visible = true; } catch {}
+        try { btn.setAttribute('visible', true); } catch {}
+        try { target.setAttribute('visible', true); } catch {}
+
+        // 2) material transparente e opaco (sem depth test p/ vir “por cima”)
+        try { target.setAttribute('material', 'transparent', true); } catch {}
+        try { target.setAttribute('material', 'opacity', 1); } catch {}
+        try { target.setAttribute('material', 'depthTest', false); } catch {}
+
+        // 3) sobe ordem de render (caso exista geometria grande na frente)
+        try {
+          target.object3D.traverse(o => { o.renderOrder = 9999; });
+        } catch {}
+
+        // 4) marcação visual opcional (wireframe se for plane/mesh)
+        try { target.setAttribute('material', 'wireframe', true); } catch {}
+      });
+    },
+    tick(t) {
+      // também força a cada frame (garantia contra scripts que rodem depois)
+      if (!this._last || t - this._last > 50) {
+        this.forceShow();
+        this._last = t;
+      }
+    }
+  });
+
+  function boot() {
+    const scene = document.querySelector('a-scene');
+    if (!scene) return console.warn('[EDIT] a-scene não encontrada');
+    if (EDIT_MODE) {
+      scene.setAttribute('edit-force-visible', `killFades: ${KILL_FADES}`);
+      console.log('[EDIT] Modo edição TRAVADO: .btn sempre visíveis.');
+    } else {
+      if (scene.hasAttribute('edit-force-visible')) scene.removeAttribute('edit-force-visible');
+      console.log('[EDIT] Modo edição desligado (fluxo normal retoma controle).');
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', boot, { once: true });
+  } else {
+    boot();
+  }
+})();
+</script>
+
 </body>
 </html>
