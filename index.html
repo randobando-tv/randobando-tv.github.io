@@ -1,6 +1,20 @@
 <!doctype html>
 <html lang="pt-br">
 <head>
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-W42ZZ5FCW1"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-W42ZZ5FCW1');
+
+    // helper seguro para eventos
+    window.gaTrack = (name, params={}) => {
+      try { window.gtag && gtag('event', name, params); } catch(e){}
+    };
+  </script>
+
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
   <title>RANDOlidade BANDOmentada — AR</title>
@@ -13,26 +27,17 @@
   <style>
     html,body{margin:0;height:100%;background:transparent;overflow:hidden;}
     a-scene, canvas { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
-
-    /* HUD / DEBUG */
     #hud{ position:fixed;left:0;top:0;right:0;padding:8px 12px; font:13px/1.35 system-ui,-apple-system,Segoe UI,Roboto,sans-serif; color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.8); display:flex;justify-content:center;gap:8px;align-items:center; pointer-events:none; z-index:10; }
     #status{ background: rgba(0,0,0,.55); color:#fff; padding: 10px 14px; border-radius: 999px; font: 700 20px/1.25 system-ui, -apple-system, Segoe UI, Roboto, sans-serif; text-shadow: 0 1px 2px rgba(0,0,0,.4); letter-spacing: .2px; pointer-events:none; }
     #debug{ position: fixed; top: 12px; right: 12px; pointer-events:auto; background: rgba(0,0,0,.55); border: 1px solid rgba(255,255,255,.2); padding: 6px 10px; border-radius: 8px; cursor:pointer; color:#fff; font: 600 12px/1 system-ui, sans-serif; }
     #panel{ position:fixed;left:8px;bottom:8px;right:8px; background:rgba(0,0,0,.6);color:#0f0;padding:8px;border-radius:8px; font:12px/1.35 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; display:none;max-height:35vh;overflow:auto;white-space:pre-wrap; z-index:50; }
-
-    /* Guia do target (mostra quando sem alvo) */
     #guideTarget{ position:fixed; left:50%; top:50%; transform:translate(-50%,-50%); pointer-events:none; opacity:.45; max-width:75vmin; max-height:75vmin; z-index:11; display:none; filter: drop-shadow(0 6px 18px rgba(0,0,0,0.35)); }
-
-    /* Botões DOM */
     .cta{ position:fixed;left:50%;bottom:14px;transform:translateX(-50%); z-index:12; pointer-events:auto; border-radius:999px; padding:12px 18px; font:600 16px/1.2 system-ui, sans-serif; background:#111; color:#fff; border:1px solid rgba(255,255,255,.3); opacity:.95; box-shadow:0 6px 20px rgba(0,0,0,.35); cursor:pointer; display:none; }
     .cta:active{ transform:translateX(-50%) scale(.98); }
-
-    /* Esconde UI padrão MindAR */
     .mindar-ui, .mindar-ui * { display: none !important; }
   </style>
 </head>
 <body>
-  <!-- ===== UI ===== -->
   <div id="hud">
     <div id="status">Carregando…</div>
     <button id="debug" aria-pressed="false">Debug</button>
@@ -45,7 +50,6 @@
   <button id="backFreeBtn" class="cta">⟲ Voltar</button>
   <button id="backArBtn" class="cta">⟲ Voltar</button>
 
-  <!-- ===== Cena AR ===== -->
   <a-scene
     mindar-image="imageTargetSrc: assets/target.mind; filterMinCF: 0.001; filterBeta: 0.02;"
     vr-mode-ui="enabled: false"
@@ -71,7 +75,6 @@
                width="1.2" height="1.2"
                visible="false"></a-image>
 
-      <!-- Fade controlado apenas via JS -->
       <a-image id="buttonSpriteAR"
                position="0 0 0.24"
                width="1.2" height="1.2"
@@ -79,32 +82,32 @@
                material="transparent: true; alphaTest: 0.01; side: double;"></a-image>
 
       <a-entity id="buttonsAR" visible="false" position="0 -0.1 0.25" rotation="0 0 0">
-        <!-- Hitboxes invisíveis; não alteramos opacidade por fade -->
-        <a-plane class="btn" position="-0.29 0.13 0" width="0.24" height="0.11"
+        <!-- Adicionados data-ga-label -->
+        <a-plane class="btn" data-ga-label="site" position="-0.29 0.13 0" width="0.24" height="0.11"
                  material="color:#fff; transparent:true; opacity:0; side:double; depthTest:false; depthWrite:false"
                  click-open-url="url:https://randobando.tv/work">
           <a-text value=".tv" align="center" width="1.2" position="0 0 0.01" visible="false"></a-text>
         </a-plane>
 
-        <a-plane class="btn" position="-0.31 0.01 0" width="0.18" height="0.09"
+        <a-plane class="btn" data-ga-label="play" position="-0.31 0.01 0" width="0.18" height="0.09"
                  material="color:#fff; transparent:true; opacity:0; side:double; depthTest:false; depthWrite:false"
                  click-open-url="url:https://randobando.tv/play">
           <a-text value="play" align="center" width="1.2" position="0 0 0.01" visible="false"></a-text>
         </a-plane>
 
-        <a-plane class="btn" position="0.32 -0.15 0" width="0.16" height="0.10"
+        <a-plane class="btn" data-ga-label="contact" position="0.32 -0.15 0" width="0.16" height="0.10"
                  material="color:#fff; transparent:true; opacity:0; side:double; depthTest:false; depthWrite:false"
                  click-open-url="url:mailto:oi@randobando.tv">
           <a-text value="contact" align="center" width="1.2" position="0 0 0.01" visible="false"></a-text>
         </a-plane>
 
-        <a-plane class="btn" position="0.315 0.17 0" width="0.15" height="0.13"
+        <a-plane class="btn" data-ga-label="instagram" position="0.315 0.17 0" width="0.15" height="0.13"
                  material="color:#fff; transparent:true; opacity:0; side:double; depthTest:false; depthWrite:false"
                  click-open-url="url:https://www.instagram.com/randobando.tv/">
           <a-text value="inst" align="center" width="1.2" position="0 0 0.01" visible="false"></a-text>
         </a-plane>
 
-        <a-plane class="btn" position="0.315 -0.01 0" width="0.14" height="0.14"
+        <a-plane class="btn" data-ga-label="behance" position="0.315 -0.01 0" width="0.14" height="0.14"
                  material="color:#fff; transparent:true; opacity:0; side:double; depthTest:false; depthWrite:false"
                  click-open-url="url:https://www.behance.net/randobando">
           <a-text value="beh" align="center" width="1.2" position="0 0 0.01" visible="false"></a-text>
@@ -121,7 +124,6 @@
                width="1.2" height="1.2"
                visible="false"></a-image>
 
-      <!-- Fade controlado apenas via JS -->
       <a-image id="buttonSpriteFree"
                position="0 0 0.24"
                width="1.2" height="1.2"
@@ -129,31 +131,31 @@
                material="transparent: true; alphaTest: 0.01; side: double;"></a-image>
 
       <a-entity id="buttonsFree" visible="false" position="0 -0.1 0.25" rotation="0 0 0">
-        <a-plane class="btn" position="-0.29 0.13 0" width="0.24" height="0.11"
+        <a-plane class="btn" data-ga-label="site" position="-0.29 0.13 0" width="0.24" height="0.11"
                  material="color:#fff; transparent:true; opacity:0; side:double; depthTest:false; depthWrite:false"
                  click-open-url="url:https://randobando.tv/work">
           <a-text value=".tv" align="center" width="1.2" position="0 0 0.01" visible="false"></a-text>
         </a-plane>
 
-        <a-plane class="btn" position="-0.31 0.01 0" width="0.18" height="0.09"
+        <a-plane class="btn" data-ga-label="play" position="-0.31 0.01 0" width="0.18" height="0.09"
                  material="color:#fff; transparent:true; opacity:0; side:double; depthTest:false; depthWrite:false"
                  click-open-url="url:https://randobando.tv/play">
           <a-text value="play" align="center" width="1.2" position="0 0 0.01" visible="false"></a-text>
         </a-plane>
 
-        <a-plane class="btn" position="0.32 -0.15 0" width="0.16" height="0.10"
+        <a-plane class="btn" data-ga-label="contact" position="0.32 -0.15 0" width="0.16" height="0.10"
                  material="color:#fff; transparent:true; opacity:0; side:double; depthTest:false; depthWrite:false"
                  click-open-url="url:mailto:oi@randobando.tv">
           <a-text value="contact" align="center" width="1.2" position="0 0 0.01" visible="false"></a-text>
         </a-plane>
 
-        <a-plane class="btn" position="0.315 0.17 0" width="0.15" height="0.13"
+        <a-plane class="btn" data-ga-label="instagram" position="0.315 0.17 0" width="0.15" height="0.13"
                  material="color:#fff; transparent:true; opacity:0; side:double; depthTest:false; depthWrite:false"
                  click-open-url="url:https://www.instagram.com/randobando.tv/">
           <a-text value="inst" align="center" width="1.2" position="0 0 0.01" visible="false"></a-text>
         </a-plane>
 
-        <a-plane class="btn" position="0.315 -0.01 0" width="0.14" height="0.14"
+        <a-plane class="btn" data-ga-label="behance" position="0.315 -0.01 0" width="0.14" height="0.14"
                  material="color:#fff; transparent:true; opacity:0; side:double; depthTest:false; depthWrite:false"
                  click-open-url="url:https://www.behance.net/randobando">
           <a-text value="beh" align="center" width="1.2" position="0 0 0.01" visible="false"></a-text>
@@ -165,316 +167,79 @@
 
   <script>
   (()=>{"use strict";
-
     const CONFIG = Object.freeze({
       FALLBACK_DELAY_MS: 2000,
       FIRST_FRAME_TIMEOUT_MS: 2000,
       DEFAULT_WORLD_DISTANCE: 3000,
       DEFAULT_WORLD_SCALE: 1000,
-      BUTTONS_VISIBILITY: {
-        ar:   { planes: false, texts: false },
-        free: { planes: false, texts: false }
-      },
-      // ======= CONTROLES DE FADE (apenas no sprite PNG dos botões) =======
-      FADES_BUTTON_SPRITE: {
-        enabled: false,
-        inMs: 500,
-        outMs: 500,
-        targetOpacity: 1,
-        startOpacity: 0
-      }
+      BUTTONS_VISIBILITY: { ar:{planes:false,texts:false}, free:{planes:false,texts:false} },
+      FADES_BUTTON_SPRITE: { enabled:false, inMs:500, outMs:500, targetOpacity:1, startOpacity:0 }
     });
 
     const FREE_LAYOUT = Object.freeze({
-      root: { offset: { x: 0, y: 0, z: 0 }, rotationEulerDeg: { x: 0, y: 0, z: 0 }, scaleMul: 1.0 },
-      sprite: { position: { x: 0, y: 0, z: 0.001 }, size: { width: 1.2, height: 1.2 } },
-      buttonSprite: { position: { x: 0, y: 0, z: 0.24 }, size: { width: 1.2, height: 1.2 } },
-      buttonsGroup: { position: { x: 0, y: -0.10, z: 0.25 }, rotationEulerDeg: { x: 0, y: 0, z: 0 } }
+      root:{ offset:{x:0,y:0,z:0}, rotationEulerDeg:{x:0,y:0,z:0}, scaleMul:1.0 },
+      sprite:{ position:{x:0,y:0,z:0.001}, size:{width:1.2,height:1.2} },
+      buttonSprite:{ position:{x:0,y:0,z:0.24}, size:{width:1.2,height:1.2} },
+      buttonsGroup:{ position:{x:0,y:-0.10,z:0.25}, rotationEulerDeg:{x:0,y:0,z:0} }
     });
 
     const SEQ = Object.freeze({
-      ANIM1: { name: 'anim1',  folder: 'assets/Anim1',    pattern: i => `anim1_${String(i).padStart(4,'0')}.png`, start: 1, end: 7, fps: 8, loop: false, ids: [] },
-      KEEP:  { name: 'keep',   folder: 'assets/Keepalive', pattern: i => `keep_${String(i).padStart(4,'0')}.png`,  start: 1, end: 3, fps: 4, loop: true,  ids: [] },
-      BUTTON:{ name: 'button', folder: 'assets/Button',    pattern: i => `but_${String(i).padStart(4,'0')}.png`,  start: 1, end: 8, fps: 7, loop: false, ids: [] },
+      ANIM1:{ name:'anim1', folder:'assets/Anim1',    pattern:i=>`anim1_${String(i).padStart(4,'0')}.png`, start:1, end:7, fps:8, loop:false, ids:[] },
+      KEEP: { name:'keep',  folder:'assets/Keepalive',pattern:i=>`keep_${String(i).padStart(4,'0')}.png`,  start:1, end:3, fps:4, loop:true,  ids:[] },
+      BUTTON:{name:'button',folder:'assets/Button',   pattern:i=>`but_${String(i).padStart(4,'0')}.png`,  start:1, end:8, fps:7, loop:false, ids:[] },
     });
 
     const $ = sel => document.querySelector(sel);
-    const setVisible = (el, v) => { if(!el) return; el.setAttribute('visible', String(!!v)); if(el.object3D) el.object3D.visible = !!v; };
-    const setSrcByAssetId = (el, assetId) => {
-      if(!el || !assetId) return;
-      const ref = `#${assetId}`;
-      el.setAttribute('src', ref);
-      el.setAttribute('material', 'src', ref);
-      const mesh = el.getObject3D?.('mesh');
-      if (mesh?.material) mesh.material.needsUpdate = true;
-    };
+    const setVisible = (el,v)=>{ if(!el) return; el.setAttribute('visible', String(!!v)); if(el.object3D) el.object3D.visible = !!v; };
+    const setSrcByAssetId = (el, assetId)=>{ if(!el||!assetId) return; const ref = `#${assetId}`; el.setAttribute('src',ref); el.setAttribute('material','src',ref); const mesh = el.getObject3D?.('mesh'); if(mesh?.material) mesh.material.needsUpdate = true; };
 
-    const panel = $('#panel');
-    const statusEl = $('#status');
-    const log = (...args)=>{
-      const ts = new Date().toISOString().split('T')[1].replace('Z','');
-      const line = `[${ts}] ` + args.map(x=>typeof x==='object'?JSON.stringify(x):String(x)).join(' ');
-      console.log('[DBG]', ...args);
-      panel.textContent += line + "\n";
-      panel.scrollTop = panel.scrollHeight;
-    };
-    $('#debug').addEventListener('click', (e)=>{
-      const on = panel.style.display !== 'block';
-      panel.style.display = on ? 'block' : 'none';
-      e.currentTarget.setAttribute('aria-pressed', String(on));
-      panel.setAttribute('aria-hidden', String(!on));
-    });
+    const panel = $('#panel'), statusEl = $('#status');
+    const log=(...a)=>{ const ts=new Date().toISOString().split('T')[1].replace('Z',''); const line=`[${ts}] `+a.map(x=>typeof x==='object'?JSON.stringify(x):String(x)).join(' '); console.log('[DBG]',...a); panel.textContent+=line+"\n"; panel.scrollTop=panel.scrollHeight; };
+    $('#debug').addEventListener('click',(e)=>{ const on = panel.style.display!=='block'; panel.style.display=on?'block':'none'; e.currentTarget.setAttribute('aria-pressed',String(on)); panel.setAttribute('aria-hidden',String(!on)); });
 
-    const scene = document.querySelector('a-scene');
-    let arReady = false;
+    const scene=document.querySelector('a-scene'); let arReady=false;
+    const assetsEl=$('#assets');
+    function ensureAssetImg(id,src){ let el=document.getElementById(id); if(!el){ el=document.createElement('img'); el.id=id; el.src=src; el.crossOrigin='anonymous'; assetsEl.appendChild(el);} return el;}
+    async function preloadSequence(cfg){ if(cfg.ids?.length) return cfg.ids.length; const ids=[],promises=[]; for(let i=cfg.start;i<=cfg.end;i++){ const id=`${cfg.name}_${String(i).padStart(4,'0')}`; const src=`${cfg.folder}/${cfg.pattern(i)}`; const img=ensureAssetImg(id,src); ids.push(id); if(!img.complete){ promises.push(new Promise(res=>{ img.addEventListener('load',res,{once:true}); img.addEventListener('error',res,{once:true}); })); }} await Promise.all(promises); cfg.ids=ids; log(`preload ${cfg.name}: ${ids.length} frames prontos`); return ids.length;}
+    async function preloadAll(){ await Promise.all([preloadSequence(SEQ.ANIM1), preloadSequence(SEQ.KEEP), preloadSequence(SEQ.BUTTON)]); }
+    async function ensureFirstFrame(elSprite,cfg,timeoutMs){ await preloadSequence(cfg); const firstId=cfg.ids?.[0]; setSrcByAssetId(elSprite,firstId); const imgEl=firstId?document.getElementById(firstId):null; const start=performance.now(); return new Promise(resolve=>{ function loop(){ const ok=!!(imgEl&&imgEl.complete&&imgEl.naturalWidth>0); if(ok) return resolve(true); if(performance.now()-start>timeoutMs) return resolve(false); requestAnimationFrame(loop);} loop(); });}
+    function makeSequencer(){ let timerId=null; const stop=()=>{ if(timerId){ clearTimeout(timerId); timerId=null; } }; const play=(el,cfg,onEnd)=>{ stop(); let frame=cfg.start; const interval=1000/(cfg.fps||10); const tick=()=>{ const idx=frame-cfg.start; const id=cfg.ids[idx]; if(id) setSrcByAssetId(el,id); frame++; if(frame>cfg.end){ if(cfg.loop){ frame=cfg.start; timerId=setTimeout(tick,interval);} else { timerId=null; onEnd&&onEnd(); } } else { timerId=setTimeout(tick,interval);} }; tick(); }; return { play, stop, get timer(){ return timerId; } }; }
+    function makeBundle(prefix){ return { sprite:document.getElementById(`sprite${prefix}`), buttonSprite:document.getElementById(`buttonSprite${prefix}`), buttons:document.getElementById(`buttons${prefix}`), get all(){ return [this.sprite,this.buttonSprite,this.buttons]; }, sequencer:makeSequencer(), btnSequencer:makeSequencer(), playing:false, keepAlive:false, setVisibleAll(v){ this.all.forEach(el=>setVisible(el,v)); }, }; }
 
-    const assetsEl = $('#assets');
-    function ensureAssetImg(id, src){
-      let el = document.getElementById(id);
-      if (!el){
-        el = document.createElement('img');
-        el.id = id; el.src = src; el.crossOrigin = 'anonymous';
-        assetsEl.appendChild(el);
-      }
-      return el;
-    }
-    async function preloadSequence(cfg){
-      if (cfg.ids?.length) return cfg.ids.length;
-      const ids = [], promises = [];
-      for (let i = cfg.start; i <= cfg.end; i++){
-        const id = `${cfg.name}_${String(i).padStart(4,'0')}`;
-        const src = `${cfg.folder}/${cfg.pattern(i)}`;
-        const img = ensureAssetImg(id, src);
-        ids.push(id);
-        if (!img.complete){
-          promises.push(new Promise(res=>{
-            img.addEventListener('load', res, {once:true});
-            img.addEventListener('error', res, {once:true});
-          }));
-        }
-      }
-      await Promise.all(promises);
-      cfg.ids = ids;
-      log(`preload ${cfg.name}: ${ids.length} frames prontos`);
-      return ids.length;
-    }
-    async function preloadAll(){
-      await Promise.all([preloadSequence(SEQ.ANIM1), preloadSequence(SEQ.KEEP), preloadSequence(SEQ.BUTTON)]);
-    }
+    const anchor=$('#anchor'), freeRoot=$('#freeRoot');
+    const AR=makeBundle('AR'), FREE=makeBundle('Free');
 
-    async function ensureFirstFrame(elSprite, cfg, timeoutMs){
-      await preloadSequence(cfg);
-      const firstId = cfg.ids?.[0];
-      setSrcByAssetId(elSprite, firstId);
-      const imgEl = firstId ? document.getElementById(firstId) : null;
-      const start = performance.now();
-      return new Promise(resolve=>{
-        function loop(){
-          const ok = !!(imgEl && imgEl.complete && imgEl.naturalWidth > 0);
-          if (ok) return resolve(true);
-          if (performance.now() - start > timeoutMs) return resolve(false);
-          requestAnimationFrame(loop);
-        }
-        loop();
-      });
-    }
+    function setButtonPlaneMaterial(planeEl,showPlane){ const mat='color:#fff; transparent:true; opacity:0; side:double; depthTest:false; depthWrite:false'; planeEl.setAttribute('material',mat); const mesh=planeEl.getObject3D('mesh'); if(mesh&&mesh.material) mesh.material.needsUpdate=true; }
+    function applyButtonsVisibility(groupEl,mode){ if(!groupEl) return; const cfg=CONFIG.BUTTONS_VISIBILITY[mode]||{planes:false,texts:false}; groupEl.querySelectorAll('.btn').forEach(p=>setButtonPlaneMaterial(p,!!cfg.planes)); groupEl.querySelectorAll('a-text').forEach(t=>t.setAttribute('visible',!!cfg.texts)); }
 
-    function makeSequencer(){
-      let timerId = null;
-      const stop = ()=>{ if(timerId){ clearTimeout(timerId); timerId=null; } };
-      const play = (el, cfg, onEnd)=>{
-        stop();
-        let frame = cfg.start;
-        const interval = 1000 / (cfg.fps || 10);
-        const tick = ()=>{
-          const idx = frame - cfg.start; const id = cfg.ids[idx];
-          if (id) setSrcByAssetId(el, id);
-          frame++;
-          if (frame > cfg.end){
-            if (cfg.loop){ frame = cfg.start; timerId = setTimeout(tick, interval); }
-            else { timerId=null; onEnd && onEnd(); }
-          } else {
-            timerId = setTimeout(tick, interval);
-          }
-        };
-        tick();
-      };
-      return { play, stop, get timer(){ return timerId; } };
-    }
-
-    function makeBundle(prefix){
-      return {
-        sprite: document.getElementById(`sprite${prefix}`),
-        buttonSprite: document.getElementById(`buttonSprite${prefix}`),
-        buttons: document.getElementById(`buttons${prefix}`),
-        get all(){ return [this.sprite, this.buttonSprite, this.buttons]; },
-        sequencer: makeSequencer(),
-        btnSequencer: makeSequencer(),
-        playing: false,
-        keepAlive: false,
-        setVisibleAll(v){ this.all.forEach(el=>setVisible(el, v)); },
-      };
-    }
-
-    const anchor = $('#anchor');
-    const freeRoot = $('#freeRoot');
-
-    const AR = makeBundle('AR');
-    const FREE = makeBundle('Free');
-
-    function dumpNode(label, el){
-      const v = new THREE.Vector3();
-      if(!el?.object3D) { log(`[DUMP ${label}] null`); return; }
-      el.object3D.updateMatrixWorld(true); el.object3D.getWorldPosition(v);
-      log(`[DUMP ${label}] vis=${el.object3D.visible} pos=${v.x.toFixed(3)},${v.y.toFixed(3)},${v.z.toFixed(3)}`);
-    }
-    const dumpAR = ()=>{ dumpNode('spriteAR', AR.sprite); dumpNode('buttonSpriteAR', AR.buttonSprite); dumpNode('buttonsAR', AR.buttons); };
-    const dumpFREE = ()=>{ dumpNode('spriteFree', FREE.sprite); dumpNode('buttonSpriteFree', FREE.buttonSprite); dumpNode('buttonsFree', FREE.buttons); };
-
-    function debugDumpObject3D(label, el) {
-      if (!el?.object3D) { log(`[dbg3D ${label}] el sem object3D`); return; }
-      const o = el.object3D;
-      const wp = new THREE.Vector3(), ws = new THREE.Vector3();
-      const wq = new THREE.Quaternion();
-      o.updateMatrixWorld(true);
-      o.getWorldPosition(wp);
-      o.getWorldQuaternion(wq);
-      o.getWorldScale(ws);
-
-      const mesh = el.getObject3D('mesh');
-      const mat = mesh?.material;
-      const matInfo = mat ? `mat(depthTest=${mat.depthTest}, transparent=${!!mat.transparent}, opacity=${mat.opacity ?? 'NA'})` : 'mat=NA';
-
-      const cam = scene.camera;
-      let inFrustum = 'NA';
-      if (cam) {
-        cam.updateMatrixWorld(true);
-        const frustum = new THREE.Frustum();
-        const projView = new THREE.Matrix4().multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse);
-        frustum.setFromProjectionMatrix(projView);
-        inFrustum = frustum.containsPoint(wp);
-      }
-
-      log(`[dbg3D ${label}] vis=${o.visible} worldPos=${wp.toArray().map(n=>n.toFixed(3))} worldScale=${ws.toArray().map(n=>n.toFixed(3))} inFrustum=${inFrustum} ${matInfo}`);
-    }
-
-    function placeInFrontOfCamera(obj3D, distance = CONFIG.DEFAULT_WORLD_DISTANCE) {
-      const cam = scene.camera; if (!cam) return; cam.updateMatrixWorld(true);
-      const localFront = new THREE.Vector3(0, 0, -distance);
-      const worldFront = localFront.clone(); cam.localToWorld(worldFront);
-      const camWorldQuat = new THREE.Quaternion(); cam.getWorldQuaternion(camWorldQuat);
-      obj3D.position.copy(worldFront);
-      obj3D.quaternion.copy(camWorldQuat);
-      obj3D.updateMatrixWorld(true);
-      const camPos = new THREE.Vector3(); cam.getWorldPosition(camPos);
-      const camDir = new THREE.Vector3(); cam.getWorldDirection(camDir);
-      log(`[placeInFrontOfCamera] camPos=${camPos.toArray().map(n=>n.toFixed(3))} camDir=${camDir.toArray().map(n=>n.toFixed(3))} target=${worldFront.toArray().map(n=>n.toFixed(3))}`);
-    }
-
-    function applyFreeLayout(){
-      const root = freeRoot.object3D;
-      const rot = FREE_LAYOUT.root.rotationEulerDeg;
-      root.position.add(new THREE.Vector3(FREE_LAYOUT.root.offset.x, FREE_LAYOUT.root.offset.y, FREE_LAYOUT.root.offset.z));
-      root.scale.multiplyScalar(FREE_LAYOUT.root.scaleMul);
-      root.rotateX(THREE.MathUtils.degToRad(rot.x));
-      root.rotateY(THREE.MathUtils.degToRad(rot.y));
-      root.rotateZ(THREE.MathUtils.degToRad(rot.z));
-      root.updateMatrixWorld(true);
-
-      const setWH = (el, w, h)=>{ el.setAttribute('width', w); el.setAttribute('height', h); };
-      FREE.sprite.setAttribute('position', `${FREE_LAYOUT.sprite.position.x} ${FREE_LAYOUT.sprite.position.y} ${FREE_LAYOUT.sprite.position.z}`);
-      setWH(FREE.sprite, FREE_LAYOUT.sprite.size.width, FREE_LAYOUT.sprite.size.height);
-
-      FREE.buttonSprite.setAttribute('position', `${FREE_LAYOUT.buttonSprite.position.x} ${FREE_LAYOUT.buttonSprite.position.y} ${FREE_LAYOUT.buttonSprite.position.z}`);
-      setWH(FREE.buttonSprite, FREE_LAYOUT.buttonSprite.size.width, FREE_LAYOUT.buttonSprite.size.height);
-
-      const bg = FREE_LAYOUT.buttonsGroup;
-      FREE.buttons.setAttribute('position', `${bg.position.x} ${bg.position.y} ${bg.position.z}`);
-      FREE.buttons.setAttribute('rotation', `${bg.rotationEulerDeg.x} ${bg.rotationEulerDeg.y} ${bg.rotationEulerDeg.z}`);
-    }
-
-    /* ===== Helpers para planos clicáveis (sem fade) ===== */
-    function setButtonPlaneMaterial(planeEl, showPlane){
-      const mat = showPlane
-        ? 'color:#fff; transparent:true; opacity:0; side:double; depthTest:false; depthWrite:false'
-        : 'color:#fff; transparent:true; opacity:0; side:double; depthTest:false; depthWrite:false';
-      planeEl.setAttribute('material', mat);
-      const mesh = planeEl.getObject3D('mesh');
-      if (mesh && mesh.material) mesh.material.needsUpdate = true;
-    }
-    function applyButtonsVisibility(groupEl, mode){
-      if (!groupEl) return;
-      const cfg = CONFIG.BUTTONS_VISIBILITY[mode] || {planes:false, texts:false};
-      groupEl.querySelectorAll('.btn').forEach(p => setButtonPlaneMaterial(p, !!cfg.planes));
-      groupEl.querySelectorAll('a-text').forEach(t => t.setAttribute('visible', !!cfg.texts));
-    }
-
-    /* ======== FADES (apenas no SPRITE PNG de botões) ======== */
-    function getMat(el){
-      const mesh = el?.getObject3D?.('mesh');
-      return mesh && mesh.material ? mesh.material : null;
-    }
-    function setOpacity(el, v){
-      const m = getMat(el); if (!m) return;
-      m.transparent = true; m.opacity = Math.max(0, Math.min(1, v)); m.needsUpdate = true;
-    }
-    function fadeTo(el, to, ms){
-      if (!CONFIG.FADES_BUTTON_SPRITE.enabled) { setOpacity(el, to); return Promise.resolve(); }
-      return new Promise(res=>{
-        const m = getMat(el); if (!m) { res(); return; }
-        m.transparent = true;
-        const from = Number.isFinite(m.opacity) ? m.opacity : 1;
-        const dur = Math.max(0, ms|0); if (dur===0){ setOpacity(el, to); res(); return; }
-        const start = performance.now(); const dir = to > from ? 1 : -1;
-        function step(now){
-          const t = Math.max(0, Math.min(1, (now - start)/dur));
-          const val = from + (to - from)*t;
-          m.opacity = dir>0 ? Math.min(val, to) : Math.max(val, to);
-          m.needsUpdate = true;
-          if (t>=1) res(); else requestAnimationFrame(step);
-        }
-        requestAnimationFrame(step);
-      });
-    }
-    const fadeInSprite  = el => { setOpacity(el, CONFIG.FADES_BUTTON_SPRITE.startOpacity); setVisible(el,true); return fadeTo(el, CONFIG.FADES_BUTTON_SPRITE.targetOpacity, CONFIG.FADES_BUTTON_SPRITE.inMs); };
-    const fadeOutSprite = el => fadeTo(el, 0, CONFIG.FADES_BUTTON_SPRITE.outMs);
-
-    function hideButtonSprite(bundle){
-      // apaga de verdade o PNG de botões e desliga hitboxes
-      bundle?.btnSequencer?.stop?.();
-      setOpacity(bundle.buttonSprite, 0);
-      setVisible(bundle.buttonSprite, false);
-      setVisible(bundle.buttons, false);
-    }
+    function getMat(el){ const mesh=el?.getObject3D?.('mesh'); return mesh&&mesh.material?mesh.material:null; }
+    function setOpacity(el,v){ const m=getMat(el); if(!m) return; m.transparent=true; m.opacity=Math.max(0,Math.min(1,v)); m.needsUpdate=true; }
+    function fadeTo(el,to,ms){ if(!CONFIG.FADES_BUTTON_SPRITE.enabled){ setOpacity(el,to); return Promise.resolve(); } return new Promise(res=>{ const m=getMat(el); if(!m){ res(); return; } m.transparent=true; const from=Number.isFinite(m.opacity)?m.opacity:1; const dur=Math.max(0,ms|0); if(dur===0){ setOpacity(el,to); res(); return; } const start=performance.now(); const dir=to>from?1:-1; function step(now){ const t=Math.max(0,Math.min(1,(now-start)/dur)); const val=from+(to-from)*t; m.opacity=dir>0?Math.min(val,to):Math.max(val,to); m.needsUpdate=true; if(t>=1) res(); else requestAnimationFrame(step);} requestAnimationFrame(step); });}
+    const fadeInSprite=el=>{ setOpacity(el,CONFIG.FADES_BUTTON_SPRITE.startOpacity); setVisible(el,true); return fadeTo(el,CONFIG.FADES_BUTTON_SPRITE.targetOpacity,CONFIG.FADES_BUTTON_SPRITE.inMs); };
+    const fadeOutSprite=el=>fadeTo(el,0,CONFIG.FADES_BUTTON_SPRITE.outMs);
+    function hideButtonSprite(bundle){ bundle?.btnSequencer?.stop?.(); setOpacity(bundle.buttonSprite,0); setVisible(bundle.buttonSprite,false); setVisible(bundle.buttons,false); }
 
     async function playBundle(bundle){
       await Promise.all([preloadSequence(SEQ.ANIM1), preloadSequence(SEQ.KEEP), preloadSequence(SEQ.BUTTON)]);
       bundle.setVisibleAll(true);
-
-      bundle.playing = true; bundle.keepAlive = false;
+      bundle.playing=true; bundle.keepAlive=false;
 
       bundle.sequencer.play(bundle.sprite, SEQ.ANIM1, async ()=>{
-        bundle.playing = false; bundle.keepAlive = true;
-
-        // entra em KEEP
+        bundle.playing=false; bundle.keepAlive=true;
         bundle.sequencer.play(bundle.sprite, SEQ.KEEP);
 
-        // habilita hitboxes (invisíveis) e prepara sprite de botões sem "piscar"
-        setVisible(bundle.buttons, true);
-        applyButtonsVisibility(bundle.buttons, (bundle.buttons?.id === 'buttonsAR') ? 'ar' : 'free');
+        setVisible(bundle.buttons,true);
+        applyButtonsVisibility(bundle.buttons, (bundle.buttons?.id==='buttonsAR')?'ar':'free');
 
         setOpacity(bundle.buttonSprite, CONFIG.FADES_BUTTON_SPRITE.startOpacity);
-        setVisible(bundle.buttonSprite, true);
+        setVisible(bundle.buttonSprite,true);
 
-        // animação dos botões + fade-in em paralelo
         bundle.btnSequencer.play(bundle.buttonSprite, SEQ.BUTTON);
         await fadeInSprite(bundle.buttonSprite);
 
-        // habilita links após entrada dos botões
         if (bundle.buttons?.id === 'buttonsAR') state.linksEnabledAR = true;
         else state.linksEnabledFree = true;
 
-        // botão "voltar" no AR após 1 loop do KEEP
         if (bundle.buttons?.id === 'buttonsAR') {
           const frames = (SEQ.KEEP.end - SEQ.KEEP.start + 1);
           const loopMs = (frames / (SEQ.KEEP.fps || 1)) * 1000;
@@ -485,457 +250,192 @@
       });
     }
 
-    function stopARFlow(){
-      AR.sequencer.stop(); AR.btnSequencer.stop();
-      hideButtonSprite(AR); // essencial para não reexibir
-      AR.setVisibleAll(false);
-      AR.playing = false; AR.keepAlive = false;
-      hide(backArBtn);
-      state.linksEnabledAR = false;
-      log('AR parado'); dumpAR();
-    }
-
+    function stopARFlow(){ AR.sequencer.stop(); AR.btnSequencer.stop(); hideButtonSprite(AR); AR.setVisibleAll(false); AR.playing=false; AR.keepAlive=false; hide(backArBtn); state.linksEnabledAR=false; log('AR parado'); }
     function prepareFreeAnchor(){
       if (freeRoot.parentEl !== scene) scene.appendChild(freeRoot);
-      setVisible(freeRoot, true);
-
-      const o = freeRoot.object3D;
-      if (poseStore.last){
-        o.position.copy(poseStore.last.pos);
-        o.quaternion.copy(poseStore.last.quat);
-        o.scale.copy(poseStore.last.scale);
-        log('[fallback] herdando última pose do alvo');
-      } else {
-        placeInFrontOfCamera(o, CONFIG.DEFAULT_WORLD_DISTANCE);
-        o.scale.setScalar(CONFIG.DEFAULT_WORLD_SCALE);
-        o.updateMatrixWorld(true);
-        log('[fallback] usando pose default aproximada de AR (dist≈3000, scale≈1000)');
-        debugDumpObject3D('freeRoot (fallback default)', freeRoot);
-      }
-
-      applyFreeLayout();
-
-      FREE.setVisibleAll(true);
-      dumpFREE();
+      setVisible(freeRoot,true);
+      const o=freeRoot.object3D;
+      if (poseStore.last){ o.position.copy(poseStore.last.pos); o.quaternion.copy(poseStore.last.quat); o.scale.copy(poseStore.last.scale); log('[fallback] herdando última pose do alvo'); }
+      else { placeInFrontOfCamera(o, CONFIG.DEFAULT_WORLD_DISTANCE); o.scale.setScalar(CONFIG.DEFAULT_WORLD_SCALE); o.updateMatrixWorld(true); log('[fallback] usando pose default aproximada de AR (dist≈3000, scale≈1000)'); }
+      applyFreeLayout(); FREE.setVisibleAll(true);
     }
-
     async function startFreeFlow(){
       if (FREE.playing || FREE.keepAlive) return;
-      if (!arReady){ statusEl.textContent = 'Iniciando câmera…'; }
+      if (!arReady){ statusEl.textContent='Iniciando câmera…'; }
       prepareFreeAnchor();
+      FREE.setVisibleAll(true); setVisible(FREE.sprite,true); FREE.buttons.object3D.visible=false;
+      const mesh=FREE.sprite.getObject3D('mesh'); if(mesh&&mesh.material){ mesh.material.depthTest=false; mesh.material.transparent=true; mesh.material.needsUpdate=true; } FREE.sprite.object3D.renderOrder=999;
+      const meshBtn=FREE.buttonSprite.getObject3D('mesh'); if(meshBtn&&meshBtn.material){ meshBtn.material.depthTest=false; meshBtn.material.transparent=true; meshBtn.material.needsUpdate=true; } FREE.buttonSprite.object3D.renderOrder=999;
 
-      FREE.setVisibleAll(true);
-      setVisible(FREE.sprite, true);
-      FREE.buttons.object3D.visible = false;
+      await preloadAll(); setSrcByAssetId(FREE.sprite, SEQ.ANIM1.ids[0]);
+      const ok=await ensureFirstFrame(FREE.sprite, SEQ.ANIM1, CONFIG.FIRST_FRAME_TIMEOUT_MS);
+      if(!ok){ statusEl.textContent='Carregando imagens…'; const ok2=await ensureFirstFrame(FREE.sprite, SEQ.ANIM1, 10000); if(!ok2){ show(startFallbackBtn); log('[fallback] timeout carregando primeiro frame — tente novamente'); return; } }
 
-      const mesh = FREE.sprite.getObject3D('mesh');
-      if (mesh && mesh.material) {
-        mesh.material.depthTest = false;
-        mesh.material.transparent = true;
-        mesh.material.needsUpdate = true;
-      }
-      FREE.sprite.object3D.renderOrder = 999;
-
-      const meshBtn = FREE.buttonSprite.getObject3D('mesh');
-      if (meshBtn && meshBtn.material) {
-        meshBtn.material.depthTest = false;
-        meshBtn.material.transparent = true;
-        meshBtn.material.needsUpdate = true;
-      }
-      FREE.buttonSprite.object3D.renderOrder = 999;
-
-      await preloadAll();
-      setSrcByAssetId(FREE.sprite, SEQ.ANIM1.ids[0]);
-
-      const ok = await ensureFirstFrame(FREE.sprite, SEQ.ANIM1, CONFIG.FIRST_FRAME_TIMEOUT_MS);
-      if (!ok){
-        statusEl.textContent = 'Carregando imagens…';
-        const ok2 = await ensureFirstFrame(FREE.sprite, SEQ.ANIM1, 10000);
-        if (!ok2){
-          show(startFallbackBtn);
-          log('[fallback] timeout carregando primeiro frame — tente novamente');
-          return;
-        }
-      }
-
-      hide(startFallbackBtn); hide(guideTarget);
-      show(backFreeBtn);
+      hide(startFallbackBtn); hide(guideTarget); show(backFreeBtn);
       await playBundle(FREE);
-      dumpFREE();
     }
+    function stopFreeFlow(){ FREE.sequencer.stop(); FREE.btnSequencer.stop(); hideButtonSprite(FREE); FREE.setVisibleAll(false); setVisible(freeRoot,false); FREE.playing=false; FREE.keepAlive=false; hide(backFreeBtn); state.linksEnabledFree=false; log('FREE parado'); }
 
-    function stopFreeFlow(){
-      FREE.sequencer.stop(); FREE.btnSequencer.stop();
-      hideButtonSprite(FREE); // essencial para não reexibir
-      FREE.setVisibleAll(false); setVisible(freeRoot, false);
-      FREE.playing = false; FREE.keepAlive = false;
-      hide(backFreeBtn);
-      state.linksEnabledFree = false;
-      log('FREE parado'); dumpFREE();
-    }
+    const guideTarget=$('#guideTarget'), startBtn=$('#startBtn'), startFallbackBtn=$('#startFallback');
+    const show=el=>{ if(el) el.style.display='inline-block'; }, hide=el=>{ if(el) el.style.display='none'; };
 
-    // ===== Estado e UI =====
-    const guideTarget = $('#guideTarget');
-    const startBtn = $('#startBtn');
-    const startFallbackBtn = $('#startFallback');
-    const show = el => { if(el) el.style.display = 'inline-block'; };
-    const hide = el => { if(el) el.style.display = 'none'; };
+    const state={ detected:false, fallbackTimer:null, openGuardUntil:0, linksEnabledAR:false, linksEnabledFree:false };
+    const backFreeBtn=document.getElementById('backFreeBtn'), backArBtn=document.getElementById('backArBtn');
 
-    const state = {
-      detected: false,
-      fallbackTimer: null,
-      openGuardUntil: 0,
-      linksEnabledAR: false,
-      linksEnabledFree: false,
-    };
-    const backFreeBtn = document.getElementById('backFreeBtn');
-    const backArBtn   = document.getElementById('backArBtn');
+    function scheduleFallbackButton(){ if(state.fallbackTimer) clearTimeout(state.fallbackTimer); state.fallbackTimer=setTimeout(()=>{ if(!state.detected && !FREE.playing && !FREE.keepAlive){ show(startFallbackBtn); statusEl.textContent='Você pode ativar a animação sem alvo'; log('Sem alvo em 6s → habilitado botão de modo livre'); } }, CONFIG.FALLBACK_DELAY_MS); }
 
-    function scheduleFallbackButton(){
-      if (state.fallbackTimer) clearTimeout(state.fallbackTimer);
-      state.fallbackTimer = setTimeout(()=>{
-        if (!state.detected && !FREE.playing && !FREE.keepAlive){
-          show(startFallbackBtn);
-          statusEl.textContent = 'Você pode ativar a animação sem alvo';
-          log('Sem alvo em 6s → habilitado botão de modo livre');
-        }
-      }, CONFIG.FALLBACK_DELAY_MS);
-    }
+    const poseStore={ last:null, raf:null };
+    function captureAnchorPose(){ if(poseStore.raf) return; const pos=new THREE.Vector3(); const quat=new THREE.Quaternion(); const scale=new THREE.Vector3(); const loop=()=>{ if(!state.detected){ poseStore.raf=null; return; } anchor.object3D.updateMatrixWorld(true); anchor.object3D.matrixWorld.decompose(pos,quat,scale); poseStore.last={pos:pos.clone(), quat:quat.clone(), scale:scale.clone()}; poseStore.raf=requestAnimationFrame(loop); }; poseStore.raf=requestAnimationFrame(loop); }
+    function stopCaptureAnchorPose(){ if(poseStore.raf){ cancelAnimationFrame(poseStore.raf); poseStore.raf=null; } }
 
-    // ===== Pose do Alvo =====
-    const poseStore = { last: null, raf: null };
-    function captureAnchorPose(){
-      if (poseStore.raf) return;
-      const pos = new THREE.Vector3();
-      const quat = new THREE.Quaternion();
-      const scale = new THREE.Vector3();
-      const loop = ()=>{
-        if (!state.detected){ poseStore.raf = null; return; }
-        anchor.object3D.updateMatrixWorld(true);
-        anchor.object3D.matrixWorld.decompose(pos, quat, scale);
-        poseStore.last = { pos: pos.clone(), quat: quat.clone(), scale: scale.clone() };
-        poseStore.raf = requestAnimationFrame(loop);
-      };
-      poseStore.raf = requestAnimationFrame(loop);
-    }
-    function stopCaptureAnchorPose(){ if (poseStore.raf){ cancelAnimationFrame(poseStore.raf); poseStore.raf = null; } }
-
-    // ===== MindAR Events =====
     anchor.addEventListener('targetFound', async ()=>{
-      state.detected = true;
-      state.linksEnabledAR = false;
-
-      hide(startFallbackBtn); hide(guideTarget);
-      hide(backArBtn);
-      stopFreeFlow();
-      statusEl.textContent = 'Clique no botão ou toque para iniciar';
-
+      state.detected=true; state.linksEnabledAR=false;
+      hide(startFallbackBtn); hide(guideTarget); hide(backArBtn); stopFreeFlow();
+      statusEl.textContent='Clique no botão ou toque para iniciar';
       captureAnchorPose();
-
       await preloadSequence(SEQ.ANIM1);
-      setVisible(AR.sprite, true);
-      setSrcByAssetId(AR.sprite, SEQ.ANIM1.ids[0]);
-      // garantir sprites de botão invisíveis no início
-      setVisible(AR.buttonSprite, false); setOpacity(AR.buttonSprite, 0);
-      setVisible(FREE.buttonSprite, false); setOpacity(FREE.buttonSprite, 0);
-
+      setVisible(AR.sprite,true); setSrcByAssetId(AR.sprite, SEQ.ANIM1.ids[0]);
+      setVisible(AR.buttonSprite,false); setOpacity(AR.buttonSprite,0);
+      setVisible(FREE.buttonSprite,false); setOpacity(FREE.buttonSprite,0);
       show(startBtn);
+      window.gaTrack('ar_target_found');
       log('targetFound (preview aplicado)');
     });
 
     anchor.addEventListener('targetLost', ()=>{
-      state.detected = false;
-      state.linksEnabledAR = false;
-
-      stopCaptureAnchorPose();
-      statusEl.textContent = 'Procurando alvo...';
-      hide(startBtn); show(guideTarget);
-      hide(backArBtn);
-      show(startFallbackBtn);
+      state.detected=false; state.linksEnabledAR=false;
+      stopCaptureAnchorPose(); statusEl.textContent='Procurando alvo...';
+      hide(startBtn); show(guideTarget); hide(backArBtn); show(startFallbackBtn);
       stopARFlow(); scheduleFallbackButton();
+      window.gaTrack('ar_target_lost');
       log('targetLost');
     });
 
-    // ===== Cena carregada =====
     scene.addEventListener('loaded', ()=>{
-      const cv = scene.canvas;
+      const cv=scene.canvas;
       if (cv){
-        cv.addEventListener('pointerdown', ()=>{ if (state.detected) startARFlow(); }, {passive:true});
-        ['click','touchend'].forEach(type=>{
-          cv.addEventListener(type, (e)=>{ e.preventDefault(); e.stopPropagation(); }, {capture:true, passive:false});
-        });
+        cv.addEventListener('pointerdown', ()=>{ if(state.detected) startARFlow(); }, {passive:true});
+        ['click','touchend'].forEach(type=>{ cv.addEventListener(type,(e)=>{ e.preventDefault(); e.stopPropagation(); }, {capture:true, passive:false}); });
       }
-      document.querySelectorAll('.mindar-ui, .mindar-ui-overlay, .mindar-ui-scanning').forEach(el => el.style.display = 'none');
-      show(guideTarget);
-      statusEl.textContent = 'Aponte para o alvo 🎯';
-      preloadAll();
-      scheduleFallbackButton();
-
-      // garantir sprites de botão invisíveis e opacos=0 desde o boot
-      setVisible(AR.buttonSprite, false);   setOpacity(AR.buttonSprite, 0);
-      setVisible(FREE.buttonSprite, false); setOpacity(FREE.buttonSprite, 0);
-
-      applyButtonsVisibility(document.getElementById('buttonsAR'), 'ar');
-      applyButtonsVisibility(document.getElementById('buttonsFree'), 'free');
-
+      document.querySelectorAll('.mindar-ui, .mindar-ui-overlay, .mindar-ui-scanning').forEach(el=>el.style.display='none');
+      show(guideTarget); statusEl.textContent='Aponte para o alvo 🎯';
+      preloadAll(); scheduleFallbackButton();
+      setVisible(AR.buttonSprite,false); setOpacity(AR.buttonSprite,0);
+      setVisible(FREE.buttonSprite,false); setOpacity(FREE.buttonSprite,0);
+      applyButtonsVisibility(document.getElementById('buttonsAR'),'ar');
+      applyButtonsVisibility(document.getElementById('buttonsFree'),'free');
       log('scene loaded');
     });
-
-    scene.addEventListener('arReady', ()=>{ arReady = true; log('[MindAR] arReady'); });
+    scene.addEventListener('arReady', ()=>{ arReady=true; log('[MindAR] arReady'); });
     scene.addEventListener('arError', (e)=>{ log('[MindAR] arError', e?.detail || ''); });
 
-    // ===== Botões DOM =====
-    startBtn.addEventListener('pointerdown', async ()=>{
+    async function startARFlow(){
       if (!state.detected || AR.playing || AR.keepAlive) return;
       hide(startBtn); hide(backArBtn);
       await playBundle(AR);
-      dumpAR();
-    }, {passive:true});
-
-    startFallbackBtn.addEventListener('pointerdown', ()=>{ if (!state.detected) startFreeFlow(); }, {passive:true});
-
-    // ===== Reverse genérico com delay opcional =====
-    function playReverse(el, cfg, delayMs = 0){
-      return new Promise(async (resolve)=>{
-        await preloadSequence(cfg);
-        let frame = cfg.end;
-        const interval = 1000 / (cfg.fps || 10);
-        const tick = ()=>{
-          const idx = frame - cfg.start;
-          const id = cfg.ids[idx];
-          if (id) setSrcByAssetId(el, id);
-          frame--;
-          if (frame < cfg.start){
-            if (delayMs > 0) setTimeout(resolve, delayMs);
-            else resolve();
-          }
-          else { setTimeout(tick, interval); }
-        };
-        tick();
-      });
+      window.gaTrack('ar_ui_click', {action:'start_ar'});
+      log('AR flow iniciado');
     }
 
-    // ===== Componentes A-Frame =====
-    AFRAME.registerComponent('click-open-url', { schema:{ url:{type:'string'} }, init(){ log(`[click-open-url] init: ${this.data.url}`); } });
+    startBtn.addEventListener('pointerdown', startARFlow, {passive:true});
+    startFallbackBtn.addEventListener('pointerdown', ()=>{ if(!state.detected) { window.gaTrack('ar_ui_click',{action:'start_free'}); startFreeFlow(); } }, {passive:true});
 
-    // ===== Raycast manual com guards =====
+    function playReverse(el,cfg,delayMs=0){ return new Promise(async (resolve)=>{ await preloadSequence(cfg); let frame=cfg.end; const interval=1000/(cfg.fps||10); const tick=()=>{ const idx=frame-cfg.start; const id=cfg.ids[idx]; if(id) setSrcByAssetId(el,id); frame--; if(frame<cfg.start){ if(delayMs>0) setTimeout(resolve,delayMs); else resolve(); } else { setTimeout(tick,interval);} }; tick(); }); }
+
+    AFRAME.registerComponent('click-open-url',{ schema:{url:{type:'string'}}, init(){ log(`[click-open-url] init: ${this.data.url}`); } });
+
     (function setupManualClick(){
-      let manualRaycaster=null, manualSetupDone=false; const mouse = new THREE.Vector2();
-      function treeVisible(el){ if (!el?.object3D) return false; let o=el.object3D; while(o){ if(o.visible===false) return false; o=o.parent; } return el.getAttribute?.('visible')!=='false'; }
+      let manualRaycaster=null, manualSetupDone=false; const mouse=new THREE.Vector2();
+      function treeVisible(el){ if(!el?.object3D) return false; let o=el.object3D; while(o){ if(o.visible===false) return false; o=o.parent; } return el.getAttribute?.('visible')!=='false'; }
       function ready(){
-        if (manualSetupDone) return;
-        const camera = scene.camera, canvas = scene.canvas; if (!camera || !canvas){ setTimeout(ready, 300); return; }
-        manualRaycaster = new THREE.Raycaster(); manualSetupDone = true; log('[Manual Click] ready');
-        canvas.addEventListener('pointerup', (event)=>{
+        if(manualSetupDone) return;
+        const camera=scene.camera, canvas=scene.canvas; if(!camera||!canvas){ setTimeout(ready,300); return; }
+        manualRaycaster=new THREE.Raycaster(); manualSetupDone=true; log('[Manual Click] ready');
+        canvas.addEventListener('pointerup',(event)=>{
           event.preventDefault(); event.stopPropagation();
-          const now=performance.now(); if (now < state.openGuardUntil) return;
-          const rect = canvas.getBoundingClientRect();
-          mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-          mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-          manualRaycaster.setFromCamera(mouse, camera);
-          const meshes = []; document.querySelectorAll('.btn').forEach(el=>{
-            const mesh = el.getObject3D('mesh'); const visible = el.getAttribute('visible') !== 'false' && el.object3D?.visible && treeVisible(el);
-            if (mesh && visible){ mesh.userData.element = el; meshes.push(mesh); }
-          });
-          const hit = manualRaycaster.intersectObjects(meshes, true)[0]; if (!hit) return;
+          const now=performance.now(); if(now<state.openGuardUntil) return;
+          const rect=canvas.getBoundingClientRect();
+          mouse.x=((event.clientX-rect.left)/rect.width)*2-1;
+          mouse.y=-((event.clientY-rect.top)/rect.height)*2+1;
+          manualRaycaster.setFromCamera(mouse,camera);
+          const meshes=[]; document.querySelectorAll('.btn').forEach(el=>{ const mesh=el.getObject3D('mesh'); const visible=el.getAttribute('visible')!=='false' && el.object3D?.visible && treeVisible(el); if(mesh&&visible){ mesh.userData.element=el; meshes.push(mesh);} });
+          const hit=manualRaycaster.intersectObjects(meshes,true)[0]; if(!hit) return;
           let targetEl = hit.object?.el?.classList?.contains('btn') ? hit.object.el : hit.object?.userData?.element;
-          if (!targetEl) return;
+          if(!targetEl) return;
 
-          const isInAR   = !!targetEl.closest?.('#buttonsAR');
-          const isInFree = !!targetEl.closest?.('#buttonsFree');
-          if ((isInAR && !state.linksEnabledAR) || (isInFree && !state.linksEnabledFree)) {
-            log('[Manual Click] ignorado: links não habilitados ainda');
-            return;
-          }
+          const isInAR=!!targetEl.closest?.('#buttonsAR');
+          const isInFree=!!targetEl.closest?.('#buttonsFree');
+          if((isInAR && !state.linksEnabledAR) || (isInFree && !state.linksEnabledFree)){ log('[Manual Click] ignorado: links não habilitados ainda'); return; }
 
-          const comp = targetEl.components['click-open-url']; if(!comp) return; const url = comp.data.url;
-          try{ const w = window.open(url, '_blank', 'noopener,noreferrer'); state.openGuardUntil = performance.now() + 700; log(`OPEN_RESULT: ${!!w}`); }
+          const comp=targetEl.components['click-open-url']; if(!comp) return;
+          const url=comp.data.url;
+
+          // 🔴 GA: clique em link
+          const label = targetEl.dataset.gaLabel || url;
+          const mode  = isInAR ? 'ar' : 'free';
+          window.gaTrack('ar_link_click', { mode, label, url });
+
+          try{ const w=window.open(url,'_blank','noopener,noreferrer'); state.openGuardUntil=performance.now()+700; log(`OPEN_RESULT: ${!!w}`); }
           catch(err){ log('[Manual Click] erro:', err.message); }
         }, {passive:false, capture:true});
       }
-      if (scene.hasLoaded) ready(); else scene.addEventListener('loaded', ready, {once:true});
+      if(scene.hasLoaded) ready(); else scene.addEventListener('loaded', ready, {once:true});
     })();
 
-    // ===== Back FREE (reverse visível do sprite de botões) =====
-      backFreeBtn.addEventListener('pointerdown', async ()=> {
-        if (!FREE.playing && !FREE.keepAlive) return;
-        backFreeBtn.disabled = true;
+    backFreeBtn.addEventListener('pointerdown', async ()=>{
+      if(!FREE.playing && !FREE.keepAlive) return;
+      backFreeBtn.disabled=true;
+      FREE.sequencer.stop(); FREE.btnSequencer.stop(); FREE.keepAlive=false;
+      setVisible(FREE.buttonSprite,true); setOpacity(FREE.buttonSprite,1);
+      await playReverse(FREE.buttonSprite, SEQ.BUTTON);
+      await playReverse(FREE.sprite, SEQ.ANIM1, 100);
+      await fadeOutSprite(FREE.buttonSprite);
+      hideButtonSprite(FREE);
+      stopFreeFlow(); statusEl.textContent='Procurando alvo...'; show(guideTarget);
+      backFreeBtn.disabled=false; scheduleFallbackButton();
+      window.gaTrack('ar_ui_click', {action:'back_free'});
+      log('FREE: reverse visível do sprite de botões concluído.');
+    }, {passive:true});
 
-        FREE.sequencer.stop(); 
-        FREE.btnSequencer.stop();
-        FREE.keepAlive = false;
+    backArBtn.addEventListener('pointerdown', async ()=>{
+      if(!AR.playing && !AR.keepAlive) return;
+      backArBtn.disabled=true;
+      AR.sequencer.stop(); AR.btnSequencer.stop(); AR.keepAlive=false;
+      setVisible(AR.buttonSprite,true); setOpacity(AR.buttonSprite,1);
+      await playReverse(AR.buttonSprite, SEQ.BUTTON);
+      await playReverse(AR.sprite, SEQ.ANIM1, 100);
+      await fadeOutSprite(AR.buttonSprite);
+      hideButtonSprite(AR);
 
-        setVisible(FREE.buttonSprite, true);
-        setOpacity(FREE.buttonSprite, 1);
+      if(state.detected){
+        AR.playing=false; AR.keepAlive=false; setVisible(AR.sprite,true);
+        await preloadSequence(SEQ.ANIM1); setSrcByAssetId(AR.sprite, SEQ.ANIM1.ids[0]);
+        hide(backArBtn); show(startBtn); statusEl.textContent='Clique no botão ou toque para iniciar';
+        captureAnchorPose(); state.linksEnabledAR=false;
+      } else {
+        stopARFlow(); stopCaptureAnchorPose(); state.detected=false; statusEl.textContent='Procurando alvo...'; hide(startBtn); show(guideTarget); state.linksEnabledAR=false; scheduleFallbackButton();
+      }
+      backArBtn.disabled=false;
+      window.gaTrack('ar_ui_click', {action:'back_ar'});
+      log('AR: reverse visível do sprite de botões concluído.');
+    }, {passive:true});
 
-        // 1) Reverse “de saída” com delay entre animações
-        await playReverse(FREE.buttonSprite, SEQ.BUTTON);
-        await playReverse(FREE.sprite, SEQ.ANIM1, 100); //  delay after button reverse
-
-        // 2) Agora sim: fade-out e ocultar definitivamente a camada de botões
-        await fadeOutSprite(FREE.buttonSprite);
-        hideButtonSprite(FREE);
-
-        stopFreeFlow();
-        statusEl.textContent = 'Procurando alvo...';
-        show(guideTarget);
-        backFreeBtn.disabled = false;
-
-        scheduleFallbackButton();
-        log('FREE: reverse visível do sprite de botões concluído.');
-      }, {passive:true});
-
-
-    // ===== Back AR (reverse visível do sprite de botões) =====
-      backArBtn.addEventListener('pointerdown', async ()=> {
-        if (!AR.playing && !AR.keepAlive) return;
-        backArBtn.disabled = true;
-
-        AR.sequencer.stop(); 
-        AR.btnSequencer.stop();
-        AR.keepAlive = false;
-
-        setVisible(AR.buttonSprite, true);
-        setOpacity(AR.buttonSprite, 1);
-
-        // 1) Reverse “de saída” com delay entre animações
-        await playReverse(AR.buttonSprite, SEQ.BUTTON);
-        await playReverse(AR.sprite, SEQ.ANIM1, 100); // delay after button reverse
-
-        // 2) Agora faz fade-out e esconde definitivo
-        await fadeOutSprite(AR.buttonSprite);
-        hideButtonSprite(AR);
-
-        if (state.detected) {
-          AR.playing = false;
-          AR.keepAlive = false;
-          setVisible(AR.sprite, true);
-          await preloadSequence(SEQ.ANIM1);
-          setSrcByAssetId(AR.sprite, SEQ.ANIM1.ids[0]); // volta pro 1º frame
-          hide(backArBtn);
-          show(startBtn);
-          statusEl.textContent = 'Clique no botão ou toque para iniciar';
-          captureAnchorPose();
-          state.linksEnabledAR = false;
-        } else {
-          stopARFlow();
-          stopCaptureAnchorPose();
-          state.detected = false;
-          statusEl.textContent = 'Procurando alvo...';
-          hide(startBtn);
-          show(guideTarget);
-          state.linksEnabledAR = false;
-          scheduleFallbackButton();
-        }
-
-        backArBtn.disabled = false;
-        log('AR: reverse visível do sprite de botões concluído.');
-      }, {passive:true});
-
-
+    function placeInFrontOfCamera(obj3D,distance){ const cam=scene.camera; if(!cam) return; cam.updateMatrixWorld(true); const localFront=new THREE.Vector3(0,0,-(distance||CONFIG.DEFAULT_WORLD_DISTANCE)); const worldFront=localFront.clone(); cam.localToWorld(worldFront); const camWorldQuat=new THREE.Quaternion(); cam.getWorldQuaternion(camWorldQuat); obj3D.position.copy(worldFront); obj3D.quaternion.copy(camWorldQuat); obj3D.updateMatrixWorld(true); }
+    function applyFreeLayout(){ const root=freeRoot.object3D; const rot=FREE_LAYOUT.root.rotationEulerDeg; root.position.add(new THREE.Vector3(FREE_LAYOUT.root.offset.x,FREE_LAYOUT.root.offset.y,FREE_LAYOUT.root.offset.z)); root.scale.multiplyScalar(FREE_LAYOUT.root.scaleMul); root.rotateX(THREE.MathUtils.degToRad(rot.x)); root.rotateY(THREE.MathUtils.degToRad(rot.y)); root.rotateZ(THREE.MathUtils.degToRad(rot.z)); root.updateMatrixWorld(true); const setWH=(el,w,h)=>{ el.setAttribute('width',w); el.setAttribute('height',h); }; FREE.sprite.setAttribute('position',`${FREE_LAYOUT.sprite.position.x} ${FREE_LAYOUT.sprite.position.y} ${FREE_LAYOUT.sprite.position.z}`); setWH(FREE.sprite,FREE_LAYOUT.sprite.size.width,FREE_LAYOUT.sprite.size.height); FREE.buttonSprite.setAttribute('position',`${FREE_LAYOUT.buttonSprite.position.x} ${FREE_LAYOUT.buttonSprite.position.y} ${FREE_LAYOUT.buttonSprite.position.z}`); setWH(FREE.buttonSprite,FREE_LAYOUT.buttonSprite.size.width,FREE_LAYOUT.buttonSprite.size.height); const bg=FREE_LAYOUT.buttonsGroup; FREE.buttons.setAttribute('position',`${bg.position.x} ${bg.position.y} ${bg.position.z}`); FREE.buttons.setAttribute('rotation',`${bg.rotationEulerDeg.x} ${bg.rotationEulerDeg.y} ${bg.rotationEulerDeg.z}`); }
     window.addEventListener('error', (e)=> log('window error:', e.message));
   })();
   </script>
+
+  <!-- Modo edição de botões (sem mudanças) -->
   <script>
-(() => {
-  // Evita dupla instalação
-  if (window.__EDIT_BTN_LOCK__) return;
-  window.__EDIT_BTN_LOCK__ = true;
-
-  // 🔧 CONFIG
-  const EDIT_MODE = false;          // ← deixe true enquanto for reposicionar
-  const KILL_FADES = false;         // remove anim/fades que mexem em visibilidade/opacity
-  const FORCE_INTERVAL_MS = 250;   // “tapinha” extra periódico além do tick()
-
-  // Componente que força visibilidade no runtime
-  AFRAME.registerComponent('edit-force-visible', {
-    schema: { killFades: {type: 'boolean', default: true} },
-    init() {
-      this._last = 0;
-      if (this.data.killFades) this.killFadesOnce();
-      // “tapinhas” periódicos para caso outros scripts re-hidem
-      this._iv = setInterval(() => this.forceShow(), FORCE_INTERVAL_MS);
-      console.log('[EDIT] edit-force-visible ativo');
-    },
-    remove() {
-      if (this._iv) clearInterval(this._iv);
-    },
-    // remove componentes de animação/fade comuns
-    killFadesOnce() {
-      document.querySelectorAll('.btn').forEach(btn => {
-        // remove animation__* que mudam visible/opacity
-        [...btn.attributes].forEach(attr => {
-          const n = attr.name;
-          if (n.startsWith('animation__')) {
-            const v = attr.value.toLowerCase();
-            if (v.includes('visible') || v.includes('opacity')) btn.removeAttribute(n);
-          }
-        });
-        const sprite = btn.querySelector('.btn-sprite, [data-sprite="true"]');
-        if (sprite) {
-          [...sprite.attributes].forEach(attr => {
-            const n = attr.name;
-            if (n.startsWith('animation__')) {
-              const v = attr.value.toLowerCase();
-              if (v.includes('visible') || v.includes('opacity')) sprite.removeAttribute(n);
-            }
-          });
-        }
-      });
-    },
-    // força visibilidade e topo de render
-    forceShow() {
-      document.querySelectorAll('.btn').forEach(btn => {
-        const target = btn.querySelector('.btn-sprite, [data-sprite="true"]') || btn;
-
-        // 1) sempre visível
-        try { btn.object3D.visible = true; } catch {}
-        try { target.object3D.visible = true; } catch {}
-        try { btn.setAttribute('visible', true); } catch {}
-        try { target.setAttribute('visible', true); } catch {}
-
-        // 2) material transparente e opaco (sem depth test p/ vir “por cima”)
-        try { target.setAttribute('material', 'transparent', true); } catch {}
-        try { target.setAttribute('material', 'opacity', 1); } catch {}
-        try { target.setAttribute('material', 'depthTest', false); } catch {}
-
-        // 3) sobe ordem de render (caso exista geometria grande na frente)
-        try {
-          target.object3D.traverse(o => { o.renderOrder = 9999; });
-        } catch {}
-
-        // 4) marcação visual opcional (wireframe se for plane/mesh)
-        try { target.setAttribute('material', 'wireframe', true); } catch {}
-      });
-    },
-    tick(t) {
-      // também força a cada frame (garantia contra scripts que rodem depois)
-      if (!this._last || t - this._last > 50) {
-        this.forceShow();
-        this._last = t;
-      }
-    }
-  });
-
-  function boot() {
-    const scene = document.querySelector('a-scene');
-    if (!scene) return console.warn('[EDIT] a-scene não encontrada');
-    if (EDIT_MODE) {
-      scene.setAttribute('edit-force-visible', `killFades: ${KILL_FADES}`);
-      console.log('[EDIT] Modo edição TRAVADO: .btn sempre visíveis.');
-    } else {
-      if (scene.hasAttribute('edit-force-visible')) scene.removeAttribute('edit-force-visible');
-      console.log('[EDIT] Modo edição desligado (fluxo normal retoma controle).');
-    }
-  }
-
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', boot, { once: true });
-  } else {
-    boot();
-  }
-})();
-</script>
-
+  (() => {
+    if (window.__EDIT_BTN_LOCK__) return;
+    window.__EDIT_BTN_LOCK__ = true;
+    const EDIT_MODE = false, KILL_FADES = false, FORCE_INTERVAL_MS = 250;
+    AFRAME.registerComponent('edit-force-visible', { schema:{ killFades:{type:'boolean',default:true} }, init(){ this._last=0; if(this.data.killFades) this.killFadesOnce(); this._iv=setInterval(()=>this.forceShow(),FORCE_INTERVAL_MS); console.log('[EDIT] edit-force-visible ativo'); }, remove(){ if(this._iv) clearInterval(this._iv); }, killFadesOnce(){ document.querySelectorAll('.btn').forEach(btn=>{ [...btn.attributes].forEach(attr=>{ const n=attr.name; if(n.startsWith('animation__')){ const v=attr.value.toLowerCase(); if(v.includes('visible')||v.includes('opacity')) btn.removeAttribute(n); } }); const sprite=btn.querySelector('.btn-sprite,[data-sprite="true"]'); if(sprite){ [...sprite.attributes].forEach(attr=>{ const n=attr.name; if(n.startsWith('animation__')){ const v=attr.value.toLowerCase(); if(v.includes('visible')||v.includes('opacity')) sprite.removeAttribute(n); } }); } }); }, forceShow(){ document.querySelectorAll('.btn').forEach(btn=>{ const target=btn.querySelector('.btn-sprite,[data-sprite="true"]')||btn; try{ btn.object3D.visible=true; }catch{} try{ target.object3D.visible=true; }catch{} try{ btn.setAttribute('visible',true); }catch{} try{ target.setAttribute('visible',true); }catch{} try{ target.setAttribute('material','transparent',true); }catch{} try{ target.setAttribute('material','opacity',1); }catch{} try{ target.setAttribute('material','depthTest',false); }catch{} try{ target.object3D.traverse(o=>{ o.renderOrder=9999; }); }catch{} try{ target.setAttribute('material','wireframe',true); }catch{} }); }, tick(t){ if(!this._last||t-this._last>50){ this.forceShow(); this._last=t; } } });
+    function boot(){ const scene=document.querySelector('a-scene'); if(!scene) return console.warn('[EDIT] a-scene não encontrada'); if(EDIT_MODE){ scene.setAttribute('edit-force-visible',`killFades: ${KILL_FADES}`); console.log('[EDIT] Modo edição TRAVADO: .btn sempre visíveis.'); } else { if(scene.hasAttribute('edit-force-visible')) scene.removeAttribute('edit-force-visible'); console.log('[EDIT] Modo edição desligado (fluxo normal retoma controle).'); } }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot, { once: true }); else boot();
+  })();
+  </script>
 </body>
 </html>
